@@ -5,7 +5,9 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/spatie/fork/Check%20&%20fix%20styling?label=code%20style)](https://github.com/spatie/fork/actions?query=workflow%3A"Check+%26+fix+styling"+branch%3Amaster)
 [![Total Downloads](https://img.shields.io/packagist/dt/spatie/fork.svg?style=flat-square)](https://packagist.org/packages/spatie/fork)
 
-This package makes it easy to run PHP concurrently. In this example, the three closures will run at the same time.
+This package makes it easy to run PHP concurrently. Behind the scenes, concurrency is achieved by forking the main PHP process to one or more child processes.
+
+In this example, the three closures will run at the same time.
 
 ```php
 use Spatie\Fork\Fork;
@@ -34,8 +36,6 @@ $results[0]; // contains 'result from process 1'
 $results[1]; // contains 'result from process 2'
 $results[2]; // contains 'result from process 3'
 ```
-
-Behind the scenes, concurrency is achieved by forking the main PHP process to one or more child processes.
 
 ## Support us
 
