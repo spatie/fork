@@ -54,20 +54,7 @@ class Fork
         $processId = pcntl_fork();
 
         if ($this->currentlyInChildProcess($processId)) {
-            socket_close($socketToChild);
-
-            if ($this->before) {
-                ($this->before)();
-            }
-
-            socket_write($socketToParent, $process->execute());
-
-            if ($this->after) {
-                ($this->after)();
-            }
-
-            socket_close($socketToParent);
-            exit;
+            $this->executingInChildProcess($socketToChild, $socketToParent, $process);
         }
 
         socket_close($socketToParent);
@@ -138,5 +125,27 @@ class Fork
         }
 
         return $sortedOutput;
+    }
+
+    protected function executingInChildProcess(
+        mixed $socketToChild,
+        mixed $socketToParent,
+        Process $process
+    ): void {
+        socket_close($socketToChild);
+
+        if ($this->before) {
+            ($this->before)();
+        }
+
+        socket_write($socketToParent, $process->execute());
+
+        if ($this->after) {
+            ($this->after)();
+        }
+
+        socket_close($socketToParent);
+
+        exit;
     }
 }
