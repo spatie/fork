@@ -84,24 +84,11 @@ class Fork
 
         while (count($runningProcesses)) {
             foreach ($runningProcesses as $key => $process) {
-                $processStatus = pcntl_waitpid($process->getPid(), $status, WNOHANG | WUNTRACED);
+                $result = $this->monitorProcess($process);
 
-                $process->setStatus($processStatus);
-
-                if ($process->finishedSuccessfully()) {
-                    $unsortedOutput[] = $process->handleSuccess();
-
+                if ($result['finished'] === true) {
+                    $unsortedOutput[] = $result['output'];
                     unset($runningProcesses[$key]);
-                } elseif ($processStatus == 0) {
-                    if ($process->getStartTime() + $process->getMaxRunTime() < time() || pcntl_wifstopped($status)) {
-                        if (! posix_kill($process->getPid(), SIGKILL)) {
-                            throw new Exception("Failed to kill {$process->getPid()}: " . posix_strerror(posix_get_last_error()));
-                        }
-
-                        unset($runningProcesses[$key]);
-                    }
-                } else {
-                    throw new Exception("Could not reliably manage process {$process->getPid()}");
                 }
             }
 
@@ -112,6 +99,39 @@ class Fork
             usleep(1_000);
         }
 
+        return $this->sortOutputByProcess($unsortedOutput);
+    }
+
+    protected function monitorProcess(Process $process): array
+    {
+        $processStatus = pcntl_waitpid($process->getPid(), $status, WNOHANG | WUNTRACED);
+
+        $process->setStatus($processStatus);
+
+        if ($process->finishedSuccessfully()) {
+            return ['finished' => true, 'output' => $process->handleSuccess()];
+        } elseif ($processStatus == 0) {
+            if ($process->getStartTime() + $process->getMaxRunTime() < time() || pcntl_wifstopped($status)) {
+                if (! posix_kill($process->getPid(), SIGKILL)) {
+                    throw new Exception("Failed to kill {$process->getPid()}: " . posix_strerror(posix_get_last_error()));
+                }
+
+                return ['finished' => true, 'output' => null];
+            }
+        } else {
+            throw new Exception("Could not reliably manage process {$process->getPid()}");
+        }
+
+        return ['finished' => false];
+    }
+
+    protected function currentlyInChildProcess(int $pid): bool
+    {
+        return $pid === 0;
+    }
+
+    protected function sortOutputByProcess(array $unsortedOutput): array
+    {
         $unsortedOutput = array_map(
             fn (string $output) => json_decode($output, true),
             $unsortedOutput
@@ -124,10 +144,5 @@ class Fork
         }
 
         return $sortedOutput;
-    }
-
-    protected function currentlyInChildProcess(int $pid): bool
-    {
-        return $pid === 0;
     }
 }
