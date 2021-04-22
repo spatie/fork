@@ -4,6 +4,7 @@ namespace Spatie\Fork;
 
 use Closure;
 use Exception;
+use Spatie\Fork\Exceptions\CouldNotManageProcess;
 
 class Fork
 {
@@ -113,7 +114,7 @@ class Fork
         }
 
         if ($processStatus !== 0) {
-            throw new Exception("Could not reliably manage process {$process->pid()}");
+            throw CouldNotManageProcess::make($process);
         }
 
         return ['finished' => false];
