@@ -50,36 +50,36 @@ class Fork
 
         socket_create_pair(AF_UNIX, SOCK_STREAM, 0, $sockets);
 
-        [$parentSocket, $childSocket] = $sockets;
+        [$socketToParent, $socketToChild] = $sockets;
 
         $processId = pcntl_fork();
 
         if ($this->currentlyInChildProcess($processId)) {
-            socket_close($childSocket);
+            socket_close($socketToChild);
 
             if ($this->before) {
                 ($this->before)();
             }
 
-            socket_write($parentSocket, $process->execute());
+            socket_write($socketToParent, $process->execute());
 
             if ($this->after) {
                 ($this->after)();
             }
 
-            socket_close($parentSocket);
+            socket_close($socketToParent);
             exit;
         }
 
-        socket_close($parentSocket);
+        socket_close($socketToParent);
 
         return $process
             ->setStartTime(time())
             ->setPid($processId)
-            ->setSocket($childSocket);
+            ->setSocket($socketToChild);
     }
 
-    private function waitFor(Process ...$runningProcesses): array
+    protected function waitFor(Process ...$runningProcesses): array
     {
         $unsortedOutput = [];
 
