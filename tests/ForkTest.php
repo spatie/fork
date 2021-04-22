@@ -21,8 +21,8 @@ class ForkTest extends TestCase
     {
         $results = Fork::new()
             ->run(
-                fn () => 1 + 1,
-                fn () => 2 + 2,
+                fn() => 1 + 1,
+                fn() => 2 + 2,
             );
 
         $this->assertEquals([2, 4], $results);
@@ -62,25 +62,43 @@ class ForkTest extends TestCase
     }
 
     /** @test */
-    public function it_before_code_runs_before_each_callable()
+    public function the_callable_given_to_before_runs_before_each_callable()
     {
         $results = Fork::new()
-            ->before(function() {
-                    global $globalCounter;
+            ->before(function () {
+                global $globalBeforeValue;
 
-                    $globalCounter = 2;
-                }
-            )
+                $globalBeforeValue = 2;
+            })
+            ->run(function () {
+                global $globalBeforeValue;
+
+                return 1 + $globalBeforeValue;
+            });
+
+        $this->assertEquals([3], $results);
+    }
+
+    /** @test */
+    public function the_callable_given_to_after_runs_after_each_callable()
+    {
+        $results = Fork::new()
+            ->after(function () {
+                global $globalAfterValue;
+
+                $this->assertEquals(3, $globalAfterValue + 2);
+            })
             ->run(
                 function () {
-                    global $globalCounter;
+                    global $globalAfterValue;
 
-                    return 1 + $globalCounter;
+                    $globalAfterValue = 1;
+
+                    return $globalAfterValue;
                 },
             );
 
-        $this->assertEquals([3], $results);
-
+        $this->assertEquals([1], $results);
     }
 
     protected function assertTookLessThanSeconds(int $expectedLessThanSeconds)
