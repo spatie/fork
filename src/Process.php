@@ -32,7 +32,7 @@ class Process
 
     public function execute(): mixed
     {
-        return ($this->callable)();
+        return json_encode(($this->callable)());
     }
 
     public function read(): ?string

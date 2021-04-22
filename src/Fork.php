@@ -35,15 +35,15 @@ class Fork
         $waitFor = [];
 
         foreach ($callables as $i => $callable) {
-            $waitFor[$i] = $this->runOne($callable);
-        }
+            $wrappedCallable = fn () => ['order' => $i, 'result' => $callable()];
 
-        ksort($waitFor);
+            $waitFor[] = $this->runOne($wrappedCallable);
+        }
 
         return $this->wait(...$waitFor);
     }
 
-    private function runOne(callable $callable): Process
+    protected function runOne(callable $callable): Process
     {
         $process = Process::fromCallable($callable);
 
@@ -80,14 +80,14 @@ class Fork
 
     private function wait(Process ...$processes): array
     {
-        $output = [];
+        $unsortedOutput = [];
 
         while (count($processes)) {
             foreach ($processes as $key => $process) {
                 $processStatus = pcntl_waitpid($process->getPid(), $status, WNOHANG | WUNTRACED);
 
                 if ($processStatus == $process->getPid()) {
-                    $output[] = $process->read();
+                    $unsortedOutput[] = $process->read();
 
                     socket_close($process->getSocket());
 
@@ -114,6 +114,16 @@ class Fork
             usleep(1_000);
         }
 
-        return $output;
+        $unsortedOutput = array_map(function (string $output) {
+            return json_decode($output, true);
+        }, $unsortedOutput);
+
+        $sortedOutput = [];
+
+        foreach ($unsortedOutput as $unsortedOutputItem) {
+            $sortedOutput[$unsortedOutputItem['order']] = $unsortedOutputItem['result'];
+        }
+
+        return $sortedOutput;
     }
 }

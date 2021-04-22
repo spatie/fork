@@ -32,7 +32,7 @@ class ForkTest extends TestCase
                     return 1 + 1;
                 },
                 function () {
-                    sleep(1);
+                    sleep(2);
 
                     return 2 + 2;
                 },
@@ -50,7 +50,7 @@ class ForkTest extends TestCase
 
         $this->assertEquals([2, 4, 6, 8], $results);
 
-        $this->assertTookLessThanSeconds(2, $startTime);
+        $this->assertTookLessThanSeconds(3, $startTime);
     }
 
     protected function assertTookLessThanSeconds(int $expectedLessThanSeconds, float $startTime)
