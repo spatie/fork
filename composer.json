@@ -15,13 +15,13 @@
         }
     ],
     "require": {
-        "php": "^7.4|^8.0"
+        "php": "^8.0",
+        "ext-sockets": "*",
+        "ext-pcntl": "*"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^2.17",
         "phpunit/phpunit": "^9.5",
-        "spatie/ray": "^1.10",
-        "vimeo/psalm": "^4.3"
+        "spatie/ray": "^1.10"
     },
     "autoload": {
         "psr-4": {
