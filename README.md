@@ -30,7 +30,7 @@ $results = Fork::new()
         },
     );
 
-// this code will be reached this point after 1 second
+// this code will be reached after 1 second
 $results[0]; // contains 'result from process 1'
 $results[1]; // contains 'result from process 2'
 $results[2]; // contains 'result from process 3'
