@@ -1,0 +1,47 @@
+{
+    "name": "vendor_slug/package_slug",
+    "description": ":package_description",
+    "keywords": [
+        ":vendor_name",
+        "package_slug"
+    ],
+    "homepage": "https://github.com/vendor_slug/package_slug",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": ":author_name",
+            "email": "author@domain.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^7.4|^8.0"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^2.17",
+        "phpunit/phpunit": "^9.5",
+        "spatie/ray": "^1.10",
+        "vimeo/psalm": "^4.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "VendorName\\Skeleton\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "VendorName\\Skeleton\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "psalm": "vendor/bin/psalm",
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage",
+        "format": "vendor/bin/php-cs-fixer fix --allow-risky=yes"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
