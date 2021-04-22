@@ -31,7 +31,6 @@ class ForkTest extends TestCase
     /** @test */
     public function it_can_execute_the_closures_concurrently()
     {
-
         $results = Fork::new()
             ->run(
                 function () {
@@ -65,11 +64,12 @@ class ForkTest extends TestCase
     public function it_before_code_runs_before_each_callable()
     {
         $results = Fork::new()
-            ->before(function() {
-                    global $globalCounter;
+            ->before(
+                function () {
+                global $globalCounter;
 
-                    $globalCounter = 2;
-                }
+                $globalCounter = 2;
+            }
             )
             ->run(
                 function () {
@@ -80,7 +80,6 @@ class ForkTest extends TestCase
             );
 
         $this->assertEquals([3], $results);
-
     }
 
     protected function assertTookLessThanSeconds(int $expectedLessThanSeconds)
