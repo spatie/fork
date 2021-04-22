@@ -1,16 +1,16 @@
 {
-    "name": "vendor_slug/package_slug",
-    "description": ":package_description",
+    "name": "spatie/fork",
+    "description": "A lightweight solution for running code concurrently in PHP",
     "keywords": [
-        ":vendor_name",
-        "package_slug"
+        "spatie",
+        "fork"
     ],
-    "homepage": "https://github.com/vendor_slug/package_slug",
+    "homepage": "https://github.com/spatie/fork",
     "license": "MIT",
     "authors": [
         {
-            "name": ":author_name",
-            "email": "author@domain.com",
+            "name": "Freek Van der Herten",
+            "email": "freek@spatie.be",
             "role": "Developer"
         }
     ],
@@ -25,12 +25,12 @@
     },
     "autoload": {
         "psr-4": {
-            "VendorName\\Skeleton\\": "src"
+            "Spatie\\Fork\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "VendorName\\Skeleton\\Tests\\": "tests"
+            "Spatie\\Fork\\Tests\\": "tests"
         }
     },
     "scripts": {
