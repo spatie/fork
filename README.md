@@ -105,7 +105,8 @@ use Spatie\Fork\Fork;
     ->before(fn () => DB::connection('mysql')->reconnect())
     ->run(
         fn () => User::find(1)->someLongRunningFunction(),
-        fn () => User::find(2)->someLongRunningFunction(),
+        fn () => User::find(2)->someLongRunningFunction()
+    );
 ```
 
 If you need to perform some cleanup in the child process after the callable has run, you can use the `after` method on a `Spatie\Fork\Fork` instance. 
