@@ -19,8 +19,6 @@ class Process
 
     protected int $startTime;
 
-    protected int $maxRunTime = 300;
-
     protected Closure $callable;
 
     public function __construct(callable $callable)
@@ -52,7 +50,18 @@ class Process
         return $this;
     }
 
-    public function triggerSuccess(): mixed
+    public function handleSuccess(): string
+    {
+        $output = $this->read();
+
+        socket_close($this->socket());
+
+        $this->triggerSuccessCallback();
+
+        return $output;
+    }
+
+    public function triggerSuccessCallback(): mixed
     {
         if (! $this->successCallback) {
             return null;
@@ -68,7 +77,7 @@ class Process
         return $this;
     }
 
-    public function getPid(): int
+    public function pid(): int
     {
         return $this->pid;
     }
@@ -80,7 +89,7 @@ class Process
         return $this;
     }
 
-    public function getSocket(): Socket
+    public function socket(): Socket
     {
         return $this->socket;
     }
@@ -92,9 +101,14 @@ class Process
         return $this;
     }
 
-    public function getName(): string
+    public function name(): string
     {
         return $this->name;
+    }
+
+    public function startTime(): int
+    {
+        return $this->startTime;
     }
 
     public function setStartTime($startTime): self
@@ -104,23 +118,6 @@ class Process
         return $this;
     }
 
-    public function getStartTime(): int
-    {
-        return $this->startTime;
-    }
-
-    public function setMaxRunTime(int $maxRunTime): Process
-    {
-        $this->maxRunTime = $maxRunTime;
-
-        return $this;
-    }
-
-    public function getMaxRunTime(): int
-    {
-        return $this->maxRunTime;
-    }
-
     public function setStatus(int $status): self
     {
         $this->status = $status;
@@ -128,19 +125,8 @@ class Process
         return $this;
     }
 
-    public function finishedSuccessfully(): bool
+    public function didFinishSuccessfully(): bool
     {
-        return $this->status === $this->status;
-    }
-
-    public function handleSuccess(): string
-    {
-        $output = $this->read();
-
-        socket_close($this->getSocket());
-
-        $this->triggerSuccess();
-
-        return $output;
+        return $this->status === $this->pid;
     }
 }

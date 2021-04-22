@@ -7,9 +7,9 @@ use Exception;
 
 class Fork
 {
-    private ?Closure $before = null;
+    protected ?Closure $before = null;
 
-    private ?Closure $after = null;
+    protected ?Closure $after = null;
 
     public static function new(): self
     {
@@ -104,22 +104,16 @@ class Fork
 
     protected function monitorProcess(Process $process): array
     {
-        $processStatus = pcntl_waitpid($process->getPid(), $status, WNOHANG | WUNTRACED);
+        $processStatus = pcntl_waitpid($process->pid(), $status, WNOHANG | WUNTRACED);
 
         $process->setStatus($processStatus);
 
-        if ($process->finishedSuccessfully()) {
+        if ($process->didFinishSuccessfully()) {
             return ['finished' => true, 'output' => $process->handleSuccess()];
-        } elseif ($processStatus == 0) {
-            if ($process->getStartTime() + $process->getMaxRunTime() < time() || pcntl_wifstopped($status)) {
-                if (! posix_kill($process->getPid(), SIGKILL)) {
-                    throw new Exception("Failed to kill {$process->getPid()}: " . posix_strerror(posix_get_last_error()));
-                }
+        }
 
-                return ['finished' => true, 'output' => null];
-            }
-        } else {
-            throw new Exception("Could not reliably manage process {$process->getPid()}");
+        if ($processStatus !== 0) {
+            throw new Exception("Could not reliably manage process {$process->pid()}");
         }
 
         return ['finished' => false];
