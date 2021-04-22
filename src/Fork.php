@@ -102,6 +102,11 @@ class Fork
         return $this->sortOutputByProcess($unsortedOutput);
     }
 
+    protected function currentlyInChildProcess(int $pid): bool
+    {
+        return $pid === 0;
+    }
+
     protected function monitorProcess(Process $process): array
     {
         $processStatus = pcntl_waitpid($process->pid(), $status, WNOHANG | WUNTRACED);
@@ -117,11 +122,6 @@ class Fork
         }
 
         return ['finished' => false];
-    }
-
-    protected function currentlyInChildProcess(int $pid): bool
-    {
-        return $pid === 0;
     }
 
     protected function sortOutputByProcess(array $unsortedOutput): array
