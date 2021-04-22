@@ -32,15 +32,15 @@ class Fork
 
     public function run(callable ...$callables): array
     {
-        $waitFor = [];
+        $wrappedCallables = [];
 
         foreach ($callables as $i => $callable) {
             $wrappedCallable = fn () => ['order' => $i, 'result' => $callable()];
 
-            $waitFor[] = $this->runOne($wrappedCallable);
+            $wrappedCallables[] = $this->runOne($wrappedCallable);
         }
 
-        return $this->wait(...$waitFor);
+        return $this->waitFor(...$wrappedCallables);
     }
 
     protected function runOne(callable $callable): Process
@@ -51,9 +51,9 @@ class Fork
 
         [$parentSocket, $childSocket] = $sockets;
 
-        $pid = pcntl_fork();
+        $processId = pcntl_fork();
 
-        if ($pid == 0) {
+        if ($this->currentlyInChildProcess($processId)) {
             socket_close($childSocket);
 
             if ($this->before) {
@@ -74,49 +74,48 @@ class Fork
 
         return $process
             ->setStartTime(time())
-            ->setPid($pid)
+            ->setPid($processId)
             ->setSocket($childSocket);
     }
 
-    private function wait(Process ...$processes): array
+    private function waitFor(Process ...$runningProcesses): array
     {
         $unsortedOutput = [];
 
-        while (count($processes)) {
-            foreach ($processes as $key => $process) {
+        while (count($runningProcesses)) {
+            foreach ($runningProcesses as $key => $process) {
                 $processStatus = pcntl_waitpid($process->getPid(), $status, WNOHANG | WUNTRACED);
 
-                if ($processStatus == $process->getPid()) {
-                    $unsortedOutput[] = $process->read();
+                $process->setStatus($processStatus);
 
-                    socket_close($process->getSocket());
+                if ($process->finishedSuccessfully()) {
+                    $unsortedOutput[] = $process->handleSuccess();
 
-                    $process->triggerSuccess();
-
-                    unset($processes[$key]);
+                    unset($runningProcesses[$key]);
                 } elseif ($processStatus == 0) {
                     if ($process->getStartTime() + $process->getMaxRunTime() < time() || pcntl_wifstopped($status)) {
                         if (! posix_kill($process->getPid(), SIGKILL)) {
                             throw new Exception("Failed to kill {$process->getPid()}: " . posix_strerror(posix_get_last_error()));
                         }
 
-                        unset($processes[$key]);
+                        unset($runningProcesses[$key]);
                     }
                 } else {
                     throw new Exception("Could not reliably manage process {$process->getPid()}");
                 }
             }
 
-            if (! count($processes)) {
+            if (! count($runningProcesses)) {
                 break;
             }
 
             usleep(1_000);
         }
 
-        $unsortedOutput = array_map(function (string $output) {
-            return json_decode($output, true);
-        }, $unsortedOutput);
+        $unsortedOutput = array_map(
+            fn (string $output) => json_decode($output, true),
+            $unsortedOutput
+        );
 
         $sortedOutput = [];
 
@@ -125,5 +124,10 @@ class Fork
         }
 
         return $sortedOutput;
+    }
+
+    protected function currentlyInChildProcess(int $pid): bool
+    {
+        return $pid === 0;
     }
 }

@@ -11,6 +11,8 @@ class Process
 
     protected string $name;
 
+    protected int $status;
+
     protected Socket $socket;
 
     protected ?Closure $successCallback = null;
@@ -117,5 +119,28 @@ class Process
     public function getMaxRunTime(): int
     {
         return $this->maxRunTime;
+    }
+
+    public function setStatus(int $status): self
+    {
+        $this->status = $status;
+
+        return $this;
+    }
+
+    public function finishedSuccessfully(): bool
+    {
+        return $this->status === $this->status;
+    }
+
+    public function handleSuccess(): string
+    {
+        $output = $this->read();
+
+        socket_close($this->getSocket());
+
+        $this->triggerSuccess();
+
+        return $output;
     }
 }
