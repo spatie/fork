@@ -3,7 +3,6 @@
 namespace Spatie\Fork;
 
 use Closure;
-use Exception;
 use Spatie\Fork\Exceptions\CouldNotManageProcess;
 
 class Fork
