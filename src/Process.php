@@ -3,22 +3,23 @@
 namespace Spatie\Fork;
 
 use Closure;
+use Socket;
 
 class Process
 {
-    protected $pid;
+    protected int $pid;
 
-    protected $name;
+    protected string $name;
 
-    protected $socket;
+    protected Socket $socket;
 
-    protected $successCallback;
+    protected ?Closure $successCallback = null;
 
-    protected $startTime;
+    protected int $startTime;
 
-    protected $maxRunTime = 300;
+    protected int $maxRunTime = 300;
 
-    private Closure $callable;
+    protected Closure $callable;
 
     public function __construct(callable $callable)
     {
@@ -30,7 +31,7 @@ class Process
         return new self($callable);
     }
 
-    public function execute(): mixed
+    public function execute(): string | bool
     {
         return json_encode(($this->callable)());
     }
@@ -49,7 +50,7 @@ class Process
         return $this;
     }
 
-    public function triggerSuccess()
+    public function triggerSuccess(): mixed
     {
         if (! $this->successCallback) {
             return null;
@@ -58,31 +59,31 @@ class Process
         return call_user_func_array($this->successCallback, [$this]);
     }
 
-    public function setPid($pid): Process
+    public function setPid(int $pid): Process
     {
         $this->pid = $pid;
 
         return $this;
     }
 
-    public function getPid()
+    public function getPid(): int
     {
         return $this->pid;
     }
 
-    public function setSocket($socket): Process
+    public function setSocket($socket): self
     {
         $this->socket = $socket;
 
         return $this;
     }
 
-    public function getSocket()
+    public function getSocket(): Socket
     {
         return $this->socket;
     }
 
-    public function setName(string $name): Process
+    public function setName(string $name): self
     {
         $this->name = $name;
 
@@ -94,14 +95,14 @@ class Process
         return $this->name;
     }
 
-    public function setStartTime($startTime)
+    public function setStartTime($startTime): self
     {
         $this->startTime = $startTime;
 
         return $this;
     }
 
-    public function getStartTime()
+    public function getStartTime(): int
     {
         return $this->startTime;
     }
