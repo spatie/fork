@@ -21,8 +21,8 @@ class ForkTest extends TestCase
     {
         $results = Fork::new()
             ->run(
-                fn() => 1 + 1,
-                fn() => 2 + 2,
+                fn () => 1 + 1,
+                fn () => 2 + 2,
             );
 
         $this->assertEquals([2, 4], $results);
@@ -31,7 +31,6 @@ class ForkTest extends TestCase
     /** @test */
     public function it_can_execute_the_closures_concurrently()
     {
-
         $results = Fork::new()
             ->run(
                 function () {
