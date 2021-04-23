@@ -101,7 +101,7 @@ class ForkTest extends TestCase
     }
 
     /** @test */
-    public function test_file_get_contents()
+    public function it_can_handle_a_real_world_example()
     {
         $result = Fork::new()
             ->run(
