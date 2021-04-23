@@ -3,7 +3,6 @@
 namespace Spatie\Fork;
 
 use Closure;
-use Spatie\Fork\Exceptions\CouldNotManageProcess;
 
 class Fork
 {
@@ -71,10 +70,8 @@ class Fork
 
         while (count($runningProcesses)) {
             foreach ($runningProcesses as $key => $process) {
-                $processOutput = $this->monitorProcess($process);
-
-                if ($process->didFinishSuccessfully()) {
-                    $output[$process->order()] = $processOutput;
+                if ($process->isFinished()) {
+                    $output[$process->order()] = $process->output();
 
                     unset($runningProcesses[$key]);
                 }
@@ -93,23 +90,6 @@ class Fork
     protected function currentlyInChildProcess(int $pid): bool
     {
         return $pid === 0;
-    }
-
-    protected function monitorProcess(Process $process): mixed
-    {
-        $processStatus = pcntl_waitpid($process->pid(), $status, WNOHANG | WUNTRACED);
-
-        $process->setStatus($processStatus);
-
-        if ($process->didFinishSuccessfully()) {
-            return $process->handleSuccess();
-        }
-
-        if ($processStatus !== 0) {
-            throw CouldNotManageProcess::make($process);
-        }
-
-        return null;
     }
 
     protected function executingInChildProcess(

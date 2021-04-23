@@ -4,6 +4,7 @@ namespace Spatie\Fork;
 
 use Closure;
 use Socket;
+use Spatie\Fork\Exceptions\CouldNotManageProcess;
 
 class Process
 {
@@ -39,13 +40,6 @@ class Process
         return json_encode(($this->callable)());
     }
 
-    public function read(): ?string
-    {
-        socket_recv($this->socket, $data, 1_000_000, MSG_WAITALL);
-
-        return $data;
-    }
-
     public function onSuccess(callable $callback): Process
     {
         $this->successCallback = $callback;
@@ -53,9 +47,9 @@ class Process
         return $this;
     }
 
-    public function handleSuccess(): string
+    public function output(): string
     {
-        $output = $this->read();
+        socket_recv($this->socket, $output, 1_000_000, MSG_WAITALL);
 
         socket_close($this->socket());
 
@@ -121,16 +115,19 @@ class Process
         return $this;
     }
 
-    public function setStatus(int $status): self
+    public function isFinished(): bool
     {
-        $this->status = $status;
+        $status = pcntl_waitpid($this->pid(), $status, WNOHANG | WUNTRACED);
 
-        return $this;
-    }
+        if ($status === $this->pid) {
+            return true;
+        }
 
-    public function didFinishSuccessfully(): bool
-    {
-        return $this->status === $this->pid;
+        if ($status !== 0) {
+            throw CouldNotManageProcess::make($this);
+        }
+
+        return false;
     }
 
     public function order(): int
