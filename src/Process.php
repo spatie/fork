@@ -8,6 +8,8 @@ use Spatie\Fork\Exceptions\CouldNotManageProcess;
 
 class Process
 {
+    public const BUFFER_LENGHT = 1024;
+
     private int $order;
 
     protected int $pid;
@@ -47,9 +49,9 @@ class Process
         return $this;
     }
 
-    public function output(): string
+    public function output(): ?string
     {
-        socket_recv($this->socket, $output, 1_000_000, MSG_WAITALL);
+        socket_recv($this->socket, $output, self::BUFFER_LENGHT, MSG_WAITALL);
 
         socket_close($this->socket());
 

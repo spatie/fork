@@ -100,6 +100,19 @@ class ForkTest extends TestCase
         $this->assertEquals([1], $results);
     }
 
+    /** @test */
+    public function test_file_get_contents()
+    {
+        $result = Fork::new()
+            ->run(
+                fn () => file_get_contents('https://stitcher.io/rss'),
+                fn () => file_get_contents('https://sebastiandedeyne.com/index.xml'),
+                fn () => file_get_contents('https://rubenvanassche.com/rss/'),
+            );
+
+        $this->assertCount(3, $result);
+    }
+
     protected function assertTookLessThanSeconds(int $expectedLessThanSeconds)
     {
         $currentTime = microtime(true);

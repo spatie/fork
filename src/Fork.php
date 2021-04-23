@@ -103,7 +103,13 @@ class Fork
             ($this->before)();
         }
 
-        socket_write($socketToParent, $process->execute());
+        $output = $process->execute();
+
+        if (is_string($output) && strlen($output) > Process::BUFFER_LENGHT) {
+            $output = substr($output, 0, Process::BUFFER_LENGHT);
+        }
+
+        socket_write($socketToParent, $output);
 
         if ($this->after) {
             ($this->after)();
