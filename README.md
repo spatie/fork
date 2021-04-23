@@ -7,34 +7,21 @@
 
 This package makes it easy to run PHP concurrently. Behind the scenes, concurrency is achieved by forking the main PHP process to one or more child processes.
 
-In this example, the three closures will run at the same time.
+In this example, all three closures will run at the same time.
 
 ```php
 use Spatie\Fork\Fork;
 
 $results = Fork::new()
     ->run(
-        function ()  {
-            sleep(1);
-        
-            return 'result from process 1';
-        },
-        function ()  {
-             sleep(1);
-        
-            return 'result from process 2';
-        },
-        function ()  {
-             sleep(1);
-        
-            return 'result from process 3';
-        },
+        fn () => file_get_contents('a.txt'),
+        fn () => file_get_contents('b.txt'),
+        fn () => file_get_contents('c.txt'),
     );
 
-// this code will be reached after 1 second
-$results[0]; // contains 'result from process 1'
-$results[1]; // contains 'result from process 2'
-$results[2]; // contains 'result from process 3'
+$results[0]; // contents of a.txt
+$results[1]; // contents of b.txt
+$results[2]; // contents of c.txt
 ```
 
 ## Support us
