@@ -8,7 +8,7 @@ use Spatie\Fork\Exceptions\CouldNotManageProcess;
 
 class Process
 {
-    public const BUFFER_LENGHT = 1024;
+    public const BUFFER_LENGTH = 1024;
 
     private int $order;
 
@@ -51,7 +51,7 @@ class Process
 
     public function output(): ?string
     {
-        socket_recv($this->socket, $output, self::BUFFER_LENGHT, MSG_WAITALL);
+        socket_recv($this->socket, $output, self::BUFFER_LENGTH, MSG_WAITALL);
 
         socket_close($this->socket());
 
