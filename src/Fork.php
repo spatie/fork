@@ -53,6 +53,8 @@ class Fork
 
         if ($this->currentlyInChildProcess($processId)) {
             $this->executingInChildProcess($socketToChild, $socketToParent, $process);
+
+            exit;
         }
 
         socket_close($socketToParent);
@@ -127,7 +129,5 @@ class Fork
         }
 
         socket_close($socketToParent);
-
-        exit;
     }
 }
