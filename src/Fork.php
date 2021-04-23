@@ -35,18 +35,16 @@ class Fork
         $wrappedCallables = [];
 
         foreach ($callables as $i => $callable) {
-            $wrappedCallable = fn () => ['order' => $i, 'result' => $callable()];
+            $process = Process::fromCallable($callable, $i);
 
-            $wrappedCallables[] = $this->runOne($wrappedCallable);
+            $wrappedCallables[] = $this->runProcess($process);
         }
 
         return $this->waitFor(...$wrappedCallables);
     }
 
-    protected function runOne(callable $callable): Process
+    protected function runProcess(Process $process): Process
     {
-        $process = Process::fromCallable($callable);
-
         socket_create_pair(AF_UNIX, SOCK_STREAM, 0, $sockets);
 
         [$socketToParent, $socketToChild] = $sockets;
@@ -67,14 +65,14 @@ class Fork
 
     protected function waitFor(Process ...$runningProcesses): array
     {
-        $unsortedOutput = [];
+        $output = [];
 
         while (count($runningProcesses)) {
             foreach ($runningProcesses as $key => $process) {
                 $result = $this->monitorProcess($process);
 
                 if ($result['finished'] === true) {
-                    $unsortedOutput[] = $result['output'];
+                    $output[$process->order()] = $result['output'];
                     unset($runningProcesses[$key]);
                 }
             }
@@ -86,7 +84,7 @@ class Fork
             usleep(1_000);
         }
 
-        return $this->sortOutputByProcess($unsortedOutput);
+        return $output;
     }
 
     protected function currentlyInChildProcess(int $pid): bool
@@ -109,22 +107,6 @@ class Fork
         }
 
         return ['finished' => false];
-    }
-
-    protected function sortOutputByProcess(array $unsortedOutput): array
-    {
-        $unsortedOutput = array_map(
-            fn (string $output) => json_decode($output, true),
-            $unsortedOutput
-        );
-
-        $sortedOutput = [];
-
-        foreach ($unsortedOutput as $unsortedOutputItem) {
-            $sortedOutput[$unsortedOutputItem['order']] = $unsortedOutputItem['result'];
-        }
-
-        return $sortedOutput;
     }
 
     protected function executingInChildProcess(

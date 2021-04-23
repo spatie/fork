@@ -7,6 +7,8 @@ use Socket;
 
 class Process
 {
+    private int $order;
+
     protected int $pid;
 
     protected string $name;
@@ -21,14 +23,15 @@ class Process
 
     protected Closure $callable;
 
-    public function __construct(callable $callable)
+    public function __construct(callable $callable, int $order)
     {
         $this->callable = Closure::fromCallable($callable);
+        $this->order = $order;
     }
 
-    public static function fromCallable(callable $callable): self
+    public static function fromCallable(callable $callable, int $order): self
     {
-        return new self($callable);
+        return new self($callable, $order);
     }
 
     public function execute(): string | bool
@@ -128,5 +131,10 @@ class Process
     public function didFinishSuccessfully(): bool
     {
         return $this->status === $this->pid;
+    }
+
+    public function order(): int
+    {
+        return $this->order;
     }
 }
