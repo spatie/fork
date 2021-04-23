@@ -101,7 +101,7 @@ class ForkTest extends TestCase
     }
 
     /** @test */
-    public function it_can_handle_a_real_world_example()
+    public function it_will_not_hang_by_truncating_the_result_when_large_output_is_returned()
     {
         $result = Fork::new()
             ->run(
