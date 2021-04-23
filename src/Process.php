@@ -39,7 +39,9 @@ class Process
 
     public function execute(): string | bool
     {
-        return json_encode(($this->callable)());
+        $output = ($this->callable)();
+
+        return json_encode($output);
     }
 
     public function onSuccess(callable $callback): Process

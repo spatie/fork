@@ -31,18 +31,18 @@ class Fork
 
     public function run(callable ...$callables): array
     {
-        $wrappedCallables = [];
+        $processes = [];
 
-        foreach ($callables as $i => $callable) {
-            $process = Process::fromCallable($callable, $i);
+        foreach ($callables as $order => $callable) {
+            $process = Process::fromCallable($callable, $order);
 
-            $wrappedCallables[] = $this->runProcess($process);
+            $processes[] = $this->forkAndStartChildProcess($process);
         }
 
-        return $this->waitFor(...$wrappedCallables);
+        return $this->waitFor(...$processes);
     }
 
-    protected function runProcess(Process $process): Process
+    protected function forkAndStartChildProcess(Process $process): Process
     {
         socket_create_pair(AF_UNIX, SOCK_STREAM, 0, $sockets);
 
