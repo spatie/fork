@@ -3,6 +3,7 @@
 namespace Spatie\Fork;
 
 use Closure;
+use Socket;
 
 class Fork
 {
@@ -51,7 +52,9 @@ class Fork
         $processId = pcntl_fork();
 
         if ($this->currentlyInChildProcess($processId)) {
-            $this->executingInChildProcess($socketToChild, $socketToParent, $process);
+            socket_close($socketToChild);
+
+            $this->executingInChildProcess($process, $socketToParent);
 
             exit;
         }
@@ -93,12 +96,9 @@ class Fork
     }
 
     protected function executingInChildProcess(
-        mixed $socketToChild,
-        mixed $socketToParent,
-        Process $process
+        Process $process,
+        Socket $socketToParent,
     ): void {
-        socket_close($socketToChild);
-
         if ($this->before) {
             ($this->before)();
         }
