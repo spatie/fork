@@ -71,10 +71,11 @@ class Fork
 
         while (count($runningProcesses)) {
             foreach ($runningProcesses as $key => $process) {
-                $result = $this->monitorProcess($process);
+                $processOutput = $this->monitorProcess($process);
 
-                if ($result['finished'] === true) {
-                    $output[$process->order()] = $result['output'];
+                if ($process->didFinishSuccessfully()) {
+                    $output[$process->order()] = $processOutput;
+
                     unset($runningProcesses[$key]);
                 }
             }
@@ -94,21 +95,21 @@ class Fork
         return $pid === 0;
     }
 
-    protected function monitorProcess(Process $process): array
+    protected function monitorProcess(Process $process): mixed
     {
         $processStatus = pcntl_waitpid($process->pid(), $status, WNOHANG | WUNTRACED);
 
         $process->setStatus($processStatus);
 
         if ($process->didFinishSuccessfully()) {
-            return ['finished' => true, 'output' => $process->handleSuccess()];
+            return $process->handleSuccess();
         }
 
         if ($processStatus !== 0) {
             throw CouldNotManageProcess::make($process);
         }
 
-        return ['finished' => false];
+        return null;
     }
 
     protected function executingInChildProcess(
