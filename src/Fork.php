@@ -37,13 +37,13 @@ class Fork
         foreach ($callables as $order => $callable) {
             $process = Process::fromCallable($callable, $order);
 
-            $processes[] = $this->forkAndStartChildProcess($process);
+            $processes[] = $this->forkForProcess($process);
         }
 
         return $this->waitFor(...$processes);
     }
 
-    protected function forkAndStartChildProcess(Process $process): Process
+    protected function forkForProcess(Process $process): Process
     {
         socket_create_pair(AF_UNIX, SOCK_STREAM, 0, $sockets);
 
