@@ -4,7 +4,7 @@ namespace Spatie\Fork;
 
 use Closure;
 use Socket;
-use Spatie\Fork\Exceptions\CouldNotManageProcess;
+use Spatie\Fork\Exceptions\CouldNotManageTask;
 
 class Task
 {
@@ -128,7 +128,7 @@ class Task
         }
 
         if ($status !== 0) {
-            throw CouldNotManageProcess::make($this);
+            throw CouldNotManageTask::make($this);
         }
 
         return false;
