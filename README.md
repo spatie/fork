@@ -102,7 +102,7 @@ If you need to perform some cleanup in the child process after the callable has 
 
 ### Using `before` and `after` in the parent process.
 
-If you need to let the callable passed to `before` or `after` run in the parent process, then you need to pass the callable to the `parent` argument.
+If you need to let the callable passed to `before` or `after` run in the parent process, then you need to pass that callable to the `parent` argument.
 
 ```php
 use App\Models\User;
