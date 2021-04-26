@@ -79,7 +79,6 @@ class Task
         return $this;
     }
 
-
     public function startTime(): int
     {
         return $this->startTime;
