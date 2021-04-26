@@ -10,11 +10,11 @@ class Task
 {
     public const BUFFER_LENGTH = 1024;
 
+    protected string $name;
+
     private int $order;
 
     protected int $pid;
-
-    protected string $name;
 
     protected int $status;
 
@@ -26,15 +26,70 @@ class Task
 
     protected Closure $callable;
 
-    public function __construct(callable $callable, int $order)
-    {
-        $this->callable = Closure::fromCallable($callable);
-        $this->order = $order;
-    }
-
     public static function fromCallable(callable $callable, int $order): self
     {
         return new self($callable, $order);
+    }
+
+    public function __construct(callable $callable, int $order)
+    {
+        $this->callable = Closure::fromCallable($callable);
+
+        $this->order = $order;
+    }
+
+    public function setName(string $name): self
+    {
+        $this->name = $name;
+
+        return $this;
+    }
+
+    public function name(): string
+    {
+        return $this->name;
+    }
+
+    public function order(): int
+    {
+        return $this->order;
+    }
+
+    public function pid(): int
+    {
+        return $this->pid;
+    }
+
+    public function setPid(int $pid): self
+    {
+        $this->pid = $pid;
+
+        return $this;
+    }
+
+    public function socket(): Socket
+    {
+        return $this->socket;
+    }
+
+    public function setSocket($socket): self
+    {
+        $this->socket = $socket;
+
+        return $this;
+    }
+
+
+    public function startTime(): int
+    {
+        return $this->startTime;
+    }
+
+    public function setStartTime($startTime): self
+    {
+        $this->startTime = $startTime;
+
+        return $this;
     }
 
     public function execute(): string | bool
@@ -44,7 +99,7 @@ class Task
         return json_encode($output);
     }
 
-    public function onSuccess(callable $callback): Task
+    public function onSuccess(callable $callback): self
     {
         $this->successCallback = $callback;
 
@@ -62,63 +117,6 @@ class Task
         return $output;
     }
 
-    public function triggerSuccessCallback(): mixed
-    {
-        if (! $this->successCallback) {
-            return null;
-        }
-
-        return call_user_func_array($this->successCallback, [$this]);
-    }
-
-    public function setPid(int $pid): Task
-    {
-        $this->pid = $pid;
-
-        return $this;
-    }
-
-    public function pid(): int
-    {
-        return $this->pid;
-    }
-
-    public function setSocket($socket): self
-    {
-        $this->socket = $socket;
-
-        return $this;
-    }
-
-    public function socket(): Socket
-    {
-        return $this->socket;
-    }
-
-    public function setName(string $name): self
-    {
-        $this->name = $name;
-
-        return $this;
-    }
-
-    public function name(): string
-    {
-        return $this->name;
-    }
-
-    public function startTime(): int
-    {
-        return $this->startTime;
-    }
-
-    public function setStartTime($startTime): self
-    {
-        $this->startTime = $startTime;
-
-        return $this;
-    }
-
     public function isFinished(): bool
     {
         $status = pcntl_waitpid($this->pid(), $status, WNOHANG | WUNTRACED);
@@ -134,8 +132,12 @@ class Task
         return false;
     }
 
-    public function order(): int
+    public function triggerSuccessCallback(): mixed
     {
-        return $this->order;
+        if (! $this->successCallback) {
+            return null;
+        }
+
+        return call_user_func_array($this->successCallback, [$this]);
     }
 }
