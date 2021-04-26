@@ -79,7 +79,9 @@ The closures to run shouldn't return objects, only primitives and arrays are all
 
 ### Running code before and after each closure
 
-If you need to execute code some before each callable passed to `run`, you can pass a callable to `before`. This callable passed to `before` will be executed in the child process right before the callable passed to  `run` will execute.
+If you need to execute code some before or after each callable passed to `run`, you can pass a callable to `before` or `after.  This callable passed  will be executed in the child process right before or fater the callable passed to  `run` will execute.
+
+### Using `before` and `after` in the child process
 
 Here's an example where we are going to get a value from the database using a Laravel Eloquent model. In order to let the child process use the DB, it is necessary to reconnect to the DB. The closuse passed to `before` will run in both child processes that are created for the closures passed to `run`.
 
@@ -92,11 +94,45 @@ use Spatie\Fork\Fork;
     ->before(fn () => DB::connection('mysql')->reconnect())
     ->run(
         fn () => User::find(1)->someLongRunningFunction(),
-        fn () => User::find(2)->someLongRunningFunction()
+        fn () => User::find(2)->someLongRunningFunction(),
     );
 ```
 
 If you need to perform some cleanup in the child process after the callable has run, you can use the `after` method on a `Spatie\Fork\Fork` instance. 
+
+### Using `before` and `after` in the parent process.
+
+If you need to let the callable passed to `before` or `after` run in the parent process, then you need to pass the callable to the `parent` argument.
+
+```php
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Spatie\Fork\Fork;
+ 
+ Fork::new()
+    ->before(parent: fn() => echo 'this runs in the parent process')
+    ->run(
+        fn () => User::find(1)->someLongRunningFunction(),
+        fn () => User::find(2)->someLongRunningFunction(),
+    );
+```
+
+You can also pass different closures, to be run in the child and the parent process
+
+```php
+use Spatie\Fork\Fork;
+
+Fork::new()
+    ->before(
+        child: fn() => echo 'this runs in the child process', 
+        parent: fn() => echo 'this runs in the parent process',
+    )
+    ->run(
+        fn () => User::find(1)->someLongRunningFunction(),
+        fn () => User::find(2)->someLongRunningFunction(),
+    );
+```
+
 
 ## Testing
 

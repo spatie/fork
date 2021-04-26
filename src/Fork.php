@@ -7,7 +7,11 @@ use Socket;
 
 class Fork
 {
-    protected ?Closure $before = null;
+    protected ?Closure $toExecuteBeforeInChildProcess = null;
+    protected ?Closure $toExecuteBeforeInParentProcess = null;
+
+    protected ?Closure $toExecuteAfterInChildProcess = null;
+    protected ?Closure $toExecuteAfterInParentProcess = null;
 
     protected ?Closure $after = null;
 
@@ -16,16 +20,18 @@ class Fork
         return new self();
     }
 
-    public function before(callable $before): self
+    public function before(callable $child = null, callable $parent = null): self
     {
-        $this->before = $before;
+        $this->toExecuteBeforeInChildProcess = $child;
+        $this->toExecuteBeforeInParentProcess = $parent;
 
         return $this;
     }
 
-    public function after(callable $after): self
+    public function after(callable $child = null, callable $parent = null): self
     {
-        $this->after = $after;
+        $this->toExecuteAfterInChildProcess = $child;
+        $this->toExecuteAfterInParentProcess = $parent;
 
         return $this;
     }
@@ -35,6 +41,10 @@ class Fork
         $processes = [];
 
         foreach ($callables as $order => $callable) {
+            if ($this->toExecuteBeforeInParentProcess) {
+                ($this->toExecuteBeforeInParentProcess)();
+            }
+
             $process = Task::fromCallable($callable, $order);
 
             $processes[] = $this->forkForProcess($process);
@@ -77,6 +87,10 @@ class Fork
                     $output[$process->order()] = $process->output();
 
                     unset($runningProcesses[$key]);
+
+                    if ($this->toExecuteAfterInParentProcess) {
+                        ($this->toExecuteAfterInParentProcess)();
+                    }
                 }
             }
 
@@ -99,8 +113,8 @@ class Fork
         Task $process,
         Socket $socketToParent,
     ): void {
-        if ($this->before) {
-            ($this->before)();
+        if ($this->toExecuteBeforeInChildProcess) {
+            ($this->toExecuteBeforeInChildProcess)();
         }
 
         $output = $process->execute();
@@ -111,8 +125,8 @@ class Fork
 
         socket_write($socketToParent, $output);
 
-        if ($this->after) {
-            ($this->after)();
+        if ($this->toExecuteAfterInChildProcess) {
+            ($this->toExecuteAfterInChildProcess)();
         }
 
         socket_close($socketToParent);

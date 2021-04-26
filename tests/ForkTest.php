@@ -101,6 +101,34 @@ class ForkTest extends TestCase
     }
 
     /** @test */
+    public function the_callable_given_to_before_can_be_run_in_the_parent_process()
+    {
+        $value = 0;
+
+        Fork::new()
+            ->before(parent: function () use (&$value) {
+                $value++;
+            })
+            ->run(fn () => 1, fn () => 2);
+
+        $this->assertEquals(2, $value);
+    }
+
+    /** @test */
+    public function the_callable_given_to_after_can_be_run_in_the_parent_process()
+    {
+        $value = 0;
+
+        Fork::new()
+            ->before(parent: function () use (&$value) {
+                $value++;
+            })
+            ->run(fn () => 1, fn () => 2);
+
+        $this->assertEquals(2, $value);
+    }
+
+    /** @test */
     public function it_will_not_hang_by_truncating_the_result_when_large_output_is_returned()
     {
         $result = Fork::new()
