@@ -35,7 +35,7 @@ class Fork
         $processes = [];
 
         foreach ($callables as $order => $callable) {
-            $process = Process::fromCallable($callable, $order);
+            $process = Task::fromCallable($callable, $order);
 
             $processes[] = $this->forkForProcess($process);
         }
@@ -43,7 +43,7 @@ class Fork
         return $this->waitFor(...$processes);
     }
 
-    protected function forkForProcess(Process $process): Process
+    protected function forkForProcess(Task $process): Task
     {
         socket_create_pair(AF_UNIX, SOCK_STREAM, 0, $sockets);
 
@@ -67,7 +67,7 @@ class Fork
             ->setSocket($socketToChild);
     }
 
-    protected function waitFor(Process ...$runningProcesses): array
+    protected function waitFor(Task ...$runningProcesses): array
     {
         $output = [];
 
@@ -96,7 +96,7 @@ class Fork
     }
 
     protected function executingInChildProcess(
-        Process $process,
+        Task $process,
         Socket $socketToParent,
     ): void {
         if ($this->before) {
@@ -105,8 +105,8 @@ class Fork
 
         $output = $process->execute();
 
-        if (is_string($output) && strlen($output) > Process::BUFFER_LENGTH) {
-            $output = substr($output, 0, Process::BUFFER_LENGTH);
+        if (is_string($output) && strlen($output) > Task::BUFFER_LENGTH) {
+            $output = substr($output, 0, Task::BUFFER_LENGTH);
         }
 
         socket_write($socketToParent, $output);

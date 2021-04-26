@@ -6,7 +6,7 @@ use Closure;
 use Socket;
 use Spatie\Fork\Exceptions\CouldNotManageProcess;
 
-class Process
+class Task
 {
     public const BUFFER_LENGTH = 1024;
 
@@ -44,7 +44,7 @@ class Process
         return json_encode($output);
     }
 
-    public function onSuccess(callable $callback): Process
+    public function onSuccess(callable $callback): Task
     {
         $this->successCallback = $callback;
 
@@ -71,7 +71,7 @@ class Process
         return call_user_func_array($this->successCallback, [$this]);
     }
 
-    public function setPid(int $pid): Process
+    public function setPid(int $pid): Task
     {
         $this->pid = $pid;
 
