@@ -95,11 +95,7 @@ class Connection
 
             $outputFromSocket = socket_read($this->socket, $this->bufferSize);
 
-            if ($outputFromSocket === false) {
-                break;
-            }
-
-            if ($outputFromSocket === '') {
+            if ($outputFromSocket === false || $outputFromSocket === ''){
                 break;
             }
 
@@ -107,3 +103,4 @@ class Connection
         }
     }
 }
+
