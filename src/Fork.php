@@ -13,8 +13,6 @@ class Fork
     protected ?Closure $toExecuteAfterInChildProcess = null;
     protected ?Closure $toExecuteAfterInParentProcess = null;
 
-    protected ?Closure $after = null;
-
     public static function new(): self
     {
         return new self();
