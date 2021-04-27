@@ -14,9 +14,9 @@ use Spatie\Fork\Fork;
 
 $results = Fork::new()
     ->run(
-        fn () => (new Api)->fetchData($userId = 1),
-        fn () => (new Api)->fetchData($userId = 2),
-        fn () => (new Api)->fetchData($userId = 3),
+        fn () => (new Api)->fetchData(userId: 1),
+        fn () => (new Api)->fetchData(userId: 2),
+        fn () => (new Api)->fetchData(userId: 3),
     );
 
 $results[0]; // fetch data of user 1
