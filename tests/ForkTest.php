@@ -133,12 +133,10 @@ class ForkTest extends TestCase
     {
         $result = Fork::new()
             ->run(
-//                fn () => file_get_contents('https://stitcher.io/rss'),
-//                fn () => file_get_contents('https://sebastiandedeyne.com/index.xml'),
+                fn () => file_get_contents('https://stitcher.io/rss'),
+                fn () => file_get_contents('https://sebastiandedeyne.com/index.xml'),
                 fn () => file_get_contents('https://rubenvanassche.com/rss/'),
             );
-
-        dd($result);
 
         $this->assertCount(3, $result);
     }

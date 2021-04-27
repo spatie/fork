@@ -23,6 +23,8 @@ class Task
 
     protected Closure $callable;
 
+    protected string $output = '';
+
     public static function fromCallable(callable $callable, int $order): self
     {
         return new self($callable, $order);
@@ -90,6 +92,19 @@ class Task
         return json_encode($output);
     }
 
+    public function output(): ?string
+    {
+        foreach ($this->connection->read() as $output) {
+            $this->output .= $output;
+        }
+
+        $this->connection->close();
+
+        $this->triggerSuccessCallback();
+
+        return $this->output;
+    }
+
     public function onSuccess(callable $callback): self
     {
         $this->successCallback = $callback;
@@ -97,24 +112,10 @@ class Task
         return $this;
     }
 
-    public function output(): ?string
-    {
-        $output = $this->connection->read();
-
-        $this->connection->close();
-
-        $this->triggerSuccessCallback();
-
-        return $output;
-    }
-
-    public function read(): void
-    {
-        $this->connection->read();
-    }
-
     public function isFinished(): bool
     {
+        $this->output .= $this->connection->read()->current();
+
         $status = pcntl_waitpid($this->pid(), $status, WNOHANG | WUNTRACED);
 
         if ($status === $this->pid) {

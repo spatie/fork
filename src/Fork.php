@@ -6,11 +6,11 @@ use Closure;
 
 class Fork
 {
-    protected ?Closure $toExecuteBeforeInChildProcess = null;
-    protected ?Closure $toExecuteBeforeInParentProcess = null;
+    protected ?Closure $toExecuteBeforeInChildTask = null;
+    protected ?Closure $toExecuteBeforeInParentTask = null;
 
-    protected ?Closure $toExecuteAfterInChildProcess = null;
-    protected ?Closure $toExecuteAfterInParentProcess = null;
+    protected ?Closure $toExecuteAfterInChildTask = null;
+    protected ?Closure $toExecuteAfterInParentTask = null;
 
     public static function new(): self
     {
@@ -19,81 +19,79 @@ class Fork
 
     public function before(callable $child = null, callable $parent = null): self
     {
-        $this->toExecuteBeforeInChildProcess = $child;
-        $this->toExecuteBeforeInParentProcess = $parent;
+        $this->toExecuteBeforeInChildTask = $child;
+        $this->toExecuteBeforeInParentTask = $parent;
 
         return $this;
     }
 
     public function after(callable $child = null, callable $parent = null): self
     {
-        $this->toExecuteAfterInChildProcess = $child;
-        $this->toExecuteAfterInParentProcess = $parent;
+        $this->toExecuteAfterInChildTask = $child;
+        $this->toExecuteAfterInParentTask = $parent;
 
         return $this;
     }
 
     public function run(callable ...$callables): array
     {
-        $processes = [];
+        $tasks = [];
 
         foreach ($callables as $order => $callable) {
-            if ($this->toExecuteBeforeInParentProcess) {
-                ($this->toExecuteBeforeInParentProcess)();
+            if ($this->toExecuteBeforeInParentTask) {
+                ($this->toExecuteBeforeInParentTask)();
             }
 
-            $process = Task::fromCallable($callable, $order);
+            $task = Task::fromCallable($callable, $order);
 
-            $processes[] = $this->forkForProcess($process);
+            $tasks[] = $this->forkForTask($task);
         }
 
-        return $this->waitFor(...$processes);
+        return $this->waitFor(...$tasks);
     }
 
-    protected function forkForProcess(Task $process): Task
+    protected function forkForTask(Task $task): Task
     {
         [$socketToParent, $socketToChild] = Connection::createPair();
 
         $processId = pcntl_fork();
 
-        if ($this->currentlyInChildProcess($processId)) {
+        if ($this->currentlyInChildTask($processId)) {
             $socketToChild->close();
 
-            $this->executeInChildProcess($process, $socketToParent);
+            $this->executeInChildTask($task, $socketToParent);
 
             exit;
         }
 
         $socketToParent->close();
 
-        return $process
+        return $task
             ->setStartTime(time())
             ->setPid($processId)
             ->setConnection($socketToChild);
     }
 
-    protected function waitFor(Task ...$runningProcesses): array
+    protected function waitFor(Task ...$runningTasks): array
     {
         $output = [];
 
-        while (count($runningProcesses)) {
-            foreach ($runningProcesses as $key => $process) {
-                $process->read();
+        while (count($runningTasks)) {
+            foreach ($runningTasks as $key => $task) {
+                if ($task->isFinished()) {
+                    $taskOutput = $task->output();
 
-                if ($process->isFinished()) {
-                    $processOutput = $process->output();
+                    $output[$task->order()] = $taskOutput;
 
-                    $output[$process->order()] = $processOutput;
+                    unset($runningTasks[$key]);
 
-                    unset($runningProcesses[$key]);
-
-                    if ($this->toExecuteAfterInParentProcess) {
-                        ($this->toExecuteAfterInParentProcess)($processOutput);
+                    if ($this->toExecuteAfterInParentTask) {
+                        ($this->toExecuteAfterInParentTask)($taskOutput);
                     }
                 }
             }
 
-            if (! count($runningProcesses)) {
+            if (! count($runningTasks)) {
                 break;
             }
 
@@ -103,27 +101,27 @@ class Fork
         return $output;
     }
 
-    protected function currentlyInChildProcess(int $pid): bool
+    protected function currentlyInChildTask(int $pid): bool
     {
         return $pid === 0;
     }
 
-    protected function executeInChildProcess(
-        Task $process,
-        Connection $socketToParent,
+    protected function executeInChildTask(
+        Task $task,
+        Connection $connectionToParent,
     ): void {
-        if ($this->toExecuteBeforeInChildProcess) {
-            ($this->toExecuteBeforeInChildProcess)();
+        if ($this->toExecuteBeforeInChildTask) {
+            ($this->toExecuteBeforeInChildTask)();
         }
 
-        $output = $process->execute();
+        $output = $task->execute();
 
-        $socketToParent->write($output);
+        $connectionToParent->write($output);
 
-        if ($this->toExecuteAfterInChildProcess) {
-            ($this->toExecuteAfterInChildProcess)($output);
+        if ($this->toExecuteAfterInChildTask) {
+            ($this->toExecuteAfterInChildTask)($output);
         }
 
-        $socketToParent->close();
+        $connectionToParent->close();
     }
 }

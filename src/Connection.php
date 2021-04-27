@@ -2,14 +2,15 @@
 
 namespace Spatie\Fork;
 
+use Generator;
 use Socket;
 
 class Connection
 {
-    private function __construct(
-        private Socket $socket,
-        private int $bufferSize = 1024,
-        private float $timeout = 0.1,
+    protected function __construct(
+        protected Socket $socket,
+        protected int $bufferSize = 1024,
+        protected float $timeout = 0.1,
     ) {
         socket_set_nonblock($this->socket);
     }
@@ -40,7 +41,7 @@ class Connection
     {
         socket_set_nonblock($this->socket);
 
-        while ($payload != '') {
+        while ($payload !== '') {
             $write = [$this->socket];
 
             $read = null;
@@ -51,32 +52,34 @@ class Connection
 
             if ($selectResult === false) {
                 break;
-            } elseif ($selectResult > 0) {
-                $length = strlen($payload);
-
-                $amountOfBytesSent = socket_write($this->socket, $payload, $length);
-
-                if ($amountOfBytesSent === false || $amountOfBytesSent == $length) {
-                    break;
-                }
-
-                $payload = substr($payload, $amountOfBytesSent);
             }
+
+            if ($selectResult <= 0) {
+                break;
+            }
+
+            $length = strlen($payload);
+
+            $amountOfBytesSent = socket_write($this->socket, $payload, $length);
+
+            if ($amountOfBytesSent === false || $amountOfBytesSent === $length) {
+                break;
+            }
+
+            $payload = substr($payload, $amountOfBytesSent);
         }
 
         return $this;
     }
 
-    public function read(): string
+    public function read(): Generator
     {
-        $output = '';
-
         socket_set_nonblock($this->socket);
 
         while (true) {
-            $write = null;
-
             $read = [$this->socket];
+
+            $write = null;
 
             $except = null;
 
@@ -84,17 +87,24 @@ class Connection
 
             if ($selectResult === false) {
                 break;
-            } elseif ($selectResult > 0) {
-                $outputFromSocket = socket_read($this->socket, $this->bufferSize);
-
-                if ($outputFromSocket === false) {
-                    break;
-                }
-
-                $output .= $outputFromSocket;
             }
 
-            return $output;
+            if ($selectResult <= 0) {
+                break;
+            }
+
+            $outputFromSocket = socket_read($this->socket, $this->bufferSize);
+
+            if ($outputFromSocket === false) {
+                break;
+            }
+
+            if ($outputFromSocket === ''){
+                break;
+            }
+
+            yield $outputFromSocket;
         }
     }
 }
+
