@@ -108,6 +108,11 @@ class Task
         return $output;
     }
 
+    public function read(): void
+    {
+        $this->connection->read();
+    }
+
     public function isFinished(): bool
     {
         $status = pcntl_waitpid($this->pid(), $status, WNOHANG | WUNTRACED);

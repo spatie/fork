@@ -8,7 +8,8 @@ class Connection
 {
     private function __construct(
         private Socket $socket,
-        private int $bufferSize = 1024
+        private int $bufferSize = 1024,
+        private float $timeout = 0.1,
     ) {
         socket_set_nonblock($this->socket);
     }
@@ -37,6 +38,8 @@ class Connection
 
     public function write(string $payload): self
     {
+        socket_set_nonblock($this->socket);
+
         while ($payload != '') {
             $write = [$this->socket];
 
@@ -44,7 +47,7 @@ class Connection
 
             $except = null;
 
-            $selectResult = socket_select($read, $write, $except, 0.01);
+            $selectResult = socket_select($read, $write, $except, $this->timeout);
 
             if ($selectResult === false) {
                 break;
@@ -77,7 +80,7 @@ class Connection
 
             $except = null;
 
-            $selectResult = socket_select($read, $write, $except, 0.01);
+            $selectResult = socket_select($read, $write, $except, $this->timeout);
 
             if ($selectResult === false) {
                 break;

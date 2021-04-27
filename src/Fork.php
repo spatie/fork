@@ -78,6 +78,8 @@ class Fork
 
         while (count($runningProcesses)) {
             foreach ($runningProcesses as $key => $process) {
+                $process->read();
+
                 if ($process->isFinished()) {
                     $processOutput = $process->output();
 
