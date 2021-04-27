@@ -3,22 +3,19 @@
 namespace Spatie\Fork;
 
 use Closure;
-use Socket;
 use Spatie\Fork\Exceptions\CouldNotManageTask;
 
 class Task
 {
-    public const BUFFER_LENGTH = 1024;
-
     protected string $name;
 
-    private int $order;
+    protected int $order;
 
     protected int $pid;
 
     protected int $status;
 
-    protected Socket $socket;
+    protected Connection $connection;
 
     protected ?Closure $successCallback = null;
 
@@ -67,14 +64,9 @@ class Task
         return $this;
     }
 
-    public function socket(): Socket
+    public function setConnection(Connection $connection): self
     {
-        return $this->socket;
-    }
-
-    public function setSocket($socket): self
-    {
-        $this->socket = $socket;
+        $this->connection = $connection;
 
         return $this;
     }
@@ -107,9 +99,9 @@ class Task
 
     public function output(): ?string
     {
-        socket_recv($this->socket, $output, self::BUFFER_LENGTH, MSG_WAITALL);
+        $output = $this->connection->read();
 
-        socket_close($this->socket());
+        $this->connection->close();
 
         $this->triggerSuccessCallback();
 

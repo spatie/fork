@@ -128,18 +128,18 @@ class ForkTest extends TestCase
         $this->assertEquals(2, $value);
     }
 
-    /** @test */
-    public function it_will_not_hang_by_truncating_the_result_when_large_output_is_returned()
-    {
-        $result = Fork::new()
-            ->run(
-                fn () => file_get_contents('https://stitcher.io/rss'),
-                fn () => file_get_contents('https://sebastiandedeyne.com/index.xml'),
-                fn () => file_get_contents('https://rubenvanassche.com/rss/'),
-            );
-
-        $this->assertCount(3, $result);
-    }
+//    /** @test */
+//    public function it_will_not_hang_by_truncating_the_result_when_large_output_is_returned()
+//    {
+//        $result = Fork::new()
+//            ->run(
+//                fn () => file_get_contents('https://stitcher.io/rss'),
+//                fn () => file_get_contents('https://sebastiandedeyne.com/index.xml'),
+//                fn () => file_get_contents('https://rubenvanassche.com/rss/'),
+//            );
+//
+//        $this->assertCount(3, $result);
+//    }
 
     /** @test */
     public function output_in_after()

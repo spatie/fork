@@ -3,7 +3,6 @@
 namespace Spatie\Fork;
 
 use Closure;
-use Socket;
 
 class Fork
 {
@@ -53,26 +52,24 @@ class Fork
 
     protected function forkForProcess(Task $process): Task
     {
-        socket_create_pair(AF_UNIX, SOCK_STREAM, 0, $sockets);
-
-        [$socketToParent, $socketToChild] = $sockets;
+        [$socketToParent, $socketToChild] = Connection::createPair();
 
         $processId = pcntl_fork();
 
         if ($this->currentlyInChildProcess($processId)) {
-            socket_close($socketToChild);
+            $socketToChild->close();
 
             $this->executeInChildProcess($process, $socketToParent);
 
             exit;
         }
 
-        socket_close($socketToParent);
+        $socketToParent->close();
 
         return $process
             ->setStartTime(time())
             ->setPid($processId)
-            ->setSocket($socketToChild);
+            ->setConnection($socketToChild);
     }
 
     protected function waitFor(Task ...$runningProcesses): array
@@ -111,7 +108,7 @@ class Fork
 
     protected function executeInChildProcess(
         Task $process,
-        Socket $socketToParent,
+        Connection $socketToParent,
     ): void {
         if ($this->toExecuteBeforeInChildProcess) {
             ($this->toExecuteBeforeInChildProcess)();
@@ -119,16 +116,12 @@ class Fork
 
         $output = $process->execute();
 
-        if (is_string($output) && strlen($output) > Task::BUFFER_LENGTH) {
-            $output = substr($output, 0, Task::BUFFER_LENGTH);
-        }
-
-        socket_write($socketToParent, $output);
+        $socketToParent->write($output);
 
         if ($this->toExecuteAfterInChildProcess) {
             ($this->toExecuteAfterInChildProcess)($output);
         }
 
-        socket_close($socketToParent);
+        $socketToParent->close();
     }
 }
