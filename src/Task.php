@@ -7,6 +7,8 @@ use Spatie\Fork\Exceptions\CouldNotManageTask;
 
 class Task
 {
+    protected const SERIALIZATION_TOKEN = '[[serialized::';
+
     protected string $name;
 
     protected int $order;
@@ -89,10 +91,14 @@ class Task
     {
         $output = ($this->callable)();
 
-        return json_encode($output);
+        if (is_string($output)) {
+            return $output;
+        }
+
+        return self::SERIALIZATION_TOKEN . serialize($output);
     }
 
-    public function output(): ?string
+    public function output(): mixed
     {
         foreach ($this->connection->read() as $output) {
             $this->output .= $output;
@@ -102,7 +108,15 @@ class Task
 
         $this->triggerSuccessCallback();
 
-        return $this->output;
+        $output = $this->output;
+
+        if (str_starts_with($output, self::SERIALIZATION_TOKEN)) {
+            $output = unserialize(
+                substr($output, strlen(self::SERIALIZATION_TOKEN))
+            );
+        }
+
+        return $output;
     }
 
     public function onSuccess(callable $callback): self

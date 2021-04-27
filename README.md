@@ -163,6 +163,16 @@ $results = Fork::new()
     );
 ```
 
+Finally, return values from child tasks are serialized using PHP's built-in `serialize` method. This means that you can return anything you can normally serialize in PHP, including objects:
+
+```php
+$result = Fork::new()
+    ->run(
+        fn () => new DateTime('2021-01-01'),
+        fn () => new DateTime('2021-01-02'),
+    );
+```
+
 ## Testing
 
 ```bash

@@ -2,6 +2,7 @@
 
 namespace Spatie\Fork\Tests;
 
+use DateTime;
 use PHPUnit\Framework\TestCase;
 use Spatie\Fork\Fork;
 
@@ -139,6 +140,19 @@ class ForkTest extends TestCase
             );
 
         $this->assertCount(3, $result);
+    }
+
+    /** @test */
+    public function it_can_return_objects()
+    {
+        $result = Fork::new()
+            ->run(
+                fn () => new DateTime('2021-01-01'),
+                fn () => new DateTime('2021-01-02'),
+            );
+
+        $this->assertEquals('2021-01-01', $result[0]->format('Y-m-d'));
+        $this->assertEquals('2021-01-02', $result[1]->format('Y-m-d'));
     }
 
     /** @test */
