@@ -99,7 +99,7 @@ class Connection
                 break;
             }
 
-            if ($outputFromSocket === ''){
+            if ($outputFromSocket === '') {
                 break;
             }
 
@@ -107,4 +107,3 @@ class Connection
         }
     }
 }
-
