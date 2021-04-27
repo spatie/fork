@@ -137,8 +137,6 @@ Fork::new()
 
 ### Returning data
 
-Each closure is allowed to return data, though there are limits to the amount: anything larger than 1024 bytes will be truncated. If you want to pass large amounts of data between the parent and its child tasks, you'll have to store that data in some kind of persistent store, like on the filesystem or in a database.
-
 All output data is gathered in an array and available as soon as all children are done. In this example, `$results` will contain three items:
 
 ```php
