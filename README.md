@@ -79,11 +79,11 @@ The closures to run shouldn't return objects, only primitives and arrays are all
 
 ### Running code before and after each closure
 
-If you need to execute code some before or after each callable passed to `run`, you can pass a callable to `before` or `after.  This callable passed  will be executed in the child process right before or fater the callable passed to  `run` will execute.
+If you need to execute code some before or after each callable passed to `run`, you can pass a callable to `before` or `after`.  This callable passed  will be executed in the child process right before or after the callable passed to  `run` will execute.
 
 ### Using `before` and `after` in the child process
 
-Here's an example where we are going to get a value from the database using a Laravel Eloquent model. In order to let the child process use the DB, it is necessary to reconnect to the DB. The closuse passed to `before` will run in both child processes that are created for the closures passed to `run`.
+Here's an example where we are going to get a value from the database using a Laravel Eloquent model. In order to let the child process use the DB, it is necessary to reconnect to the DB. The closure passed to `before` will run in both child processes that are created for the closures passed to `run`.
 
 ```php
 use App\Models\User;
@@ -110,7 +110,9 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Fork\Fork;
  
  Fork::new()
-    ->before(parent: fn() => echo 'this runs in the parent process')
+    ->before(
+        parent: fn() => echo 'this runs in the parent process'
+    )
     ->run(
         fn () => User::find(1)->someLongRunningFunction(),
         fn () => User::find(2)->someLongRunningFunction(),
