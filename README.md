@@ -155,7 +155,8 @@ The output is also available in the `after` callbacks, which are called whenever
 ```php
 $results = Fork::new()
     ->after(
-        fn (int $i) => echo $i, // 1, 2 and 3
+        child: fn (int $i) => echo $i, // 1, 2 and 3
+        parent: fn (int $i) => echo $i, // 1, 2 and 3
     )
     ->run(
         fn () => 1,
