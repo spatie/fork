@@ -62,7 +62,7 @@ class Fork
         if ($this->currentlyInChildProcess($processId)) {
             socket_close($socketToChild);
 
-            $this->executingInChildProcess($process, $socketToParent);
+            $this->executeInChildProcess($process, $socketToParent);
 
             exit;
         }
@@ -107,7 +107,7 @@ class Fork
         return $pid === 0;
     }
 
-    protected function executingInChildProcess(
+    protected function executeInChildProcess(
         Task $process,
         Socket $socketToParent,
     ): void {
