@@ -135,6 +135,10 @@ Fork::new()
     );
 ```
 
+### Returning data
+
+Each closure is allowed to return data, though there are limits to the amount: anything larger than 1024 bytes will be truncated. If you want to pass large amounts of data between the parent and its child processes, you'll have to store that data in some kind of persistent store, like on the filesystem or in a database.
+
 ## Testing
 
 ```bash
