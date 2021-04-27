@@ -5,7 +5,7 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/spatie/fork/Check%20&%20fix%20styling?label=code%20style)](https://github.com/spatie/fork/actions?query=workflow%3A"Check+%26+fix+styling"+branch%3Amaster)
 [![Total Downloads](https://img.shields.io/packagist/dt/spatie/fork.svg?style=flat-square)](https://packagist.org/packages/spatie/fork)
 
-This package makes it easy to run PHP concurrently. Behind the scenes, concurrency is achieved by forking the main PHP process to one or more child processes.
+This package makes it easy to run PHP concurrently. Behind the scenes, concurrency is achieved by forking the main PHP process to one or more child tasks.
 
 In this example, where we are going to call an imaginary slow API, all three closures will run at the same time.
 
@@ -55,24 +55,24 @@ $results = Fork::new()
         function ()  {
             sleep(1);
         
-            return 'result from process 1';
+            return 'result from task 1';
         },
         function ()  {
              sleep(1);
         
-            return 'result from process 2';
+            return 'result from task 2';
         },
         function ()  {
              sleep(1);
         
-            return 'result from process 3';
+            return 'result from task 3';
         },
     );
 
 // this code will be reached this point after 1 second
-$results[0]; // contains 'result from process 1'
-$results[1]; // contains 'result from process 2'
-$results[2]; // contains 'result from process 3'
+$results[0]; // contains 'result from task 1'
+$results[1]; // contains 'result from task 2'
+$results[2]; // contains 'result from task 3'
 ```
 
 The closures to run shouldn't return objects, only primitives and arrays are allowed.
@@ -81,9 +81,9 @@ The closures to run shouldn't return objects, only primitives and arrays are all
 
 If you need to execute code some before or after each callable passed to `run`, you can pass a callable to `before` or `after`.  This callable passed  will be executed in the child process right before or after the callable passed to  `run` will execute.
 
-### Using `before` and `after` in the child process
+### Using `before` and `after` in the child task
 
-Here's an example where we are going to get a value from the database using a Laravel Eloquent model. In order to let the child process use the DB, it is necessary to reconnect to the DB. The closure passed to `before` will run in both child processes that are created for the closures passed to `run`.
+Here's an example where we are going to get a value from the database using a Laravel Eloquent model. In order to let the child task use the DB, it is necessary to reconnect to the DB. The closure passed to `before` will run in both child taskes that are created for the closures passed to `run`.
 
 ```php
 use App\Models\User;
@@ -98,11 +98,11 @@ use Spatie\Fork\Fork;
     );
 ```
 
-If you need to perform some cleanup in the child process after the callable has run, you can use the `after` method on a `Spatie\Fork\Fork` instance. 
+If you need to perform some cleanup in the child task after the callable has run, you can use the `after` method on a `Spatie\Fork\Fork` instance. 
 
-### Using `before` and `after` in the parent process.
+### Using `before` and `after` in the parent task.
 
-If you need to let the callable passed to `before` or `after` run in the parent process, then you need to pass that callable to the `parent` argument.
+If you need to let the callable passed to `before` or `after` run in the parent task, then you need to pass that callable to the `parent` argument.
 
 ```php
 use App\Models\User;
@@ -111,7 +111,7 @@ use Spatie\Fork\Fork;
  
  Fork::new()
     ->before(
-        parent: fn() => echo 'this runs in the parent process'
+        parent: fn() => echo 'this runs in the parent task'
     )
     ->run(
         fn () => User::find(1)->someLongRunningFunction(),
@@ -119,15 +119,15 @@ use Spatie\Fork\Fork;
     );
 ```
 
-You can also pass different closures, to be run in the child and the parent process
+You can also pass different closures, to be run in the child and the parent task
 
 ```php
 use Spatie\Fork\Fork;
 
 Fork::new()
     ->before(
-        child: fn() => echo 'this runs in the child process', 
-        parent: fn() => echo 'this runs in the parent process',
+        child: fn() => echo 'this runs in the child task', 
+        parent: fn() => echo 'this runs in the parent task',
     )
     ->run(
         fn () => User::find(1)->someLongRunningFunction(),
@@ -137,7 +137,7 @@ Fork::new()
 
 ### Returning data
 
-Each closure is allowed to return data, though there are limits to the amount: anything larger than 1024 bytes will be truncated. If you want to pass large amounts of data between the parent and its child processes, you'll have to store that data in some kind of persistent store, like on the filesystem or in a database.
+Each closure is allowed to return data, though there are limits to the amount: anything larger than 1024 bytes will be truncated. If you want to pass large amounts of data between the parent and its child tasks, you'll have to store that data in some kind of persistent store, like on the filesystem or in a database.
 
 All output data is gathered in an array and available as soon as all children are done. In this example, `$results` will contain three items:
 
