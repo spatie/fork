@@ -139,6 +139,31 @@ Fork::new()
 
 Each closure is allowed to return data, though there are limits to the amount: anything larger than 1024 bytes will be truncated. If you want to pass large amounts of data between the parent and its child processes, you'll have to store that data in some kind of persistent store, like on the filesystem or in a database.
 
+All output data is gathered in an array and available as soon as all children are done. In this example, `$results` will contain three items:
+
+```php
+$results = Fork::new()
+    ->run(
+        fn () => (new Api)->fetchData(userId: 1),
+        fn () => (new Api)->fetchData(userId: 2),
+        fn () => (new Api)->fetchData(userId: 3),
+    );
+```
+
+The output is also available in the `after` callbacks, which are called whenever a child is done and not at the very end:
+
+```php
+$results = Fork::new()
+    ->after(
+        fn (int $i) => echo $i, // 1, 2 and 3
+    )
+    ->run(
+        fn () => 1,
+        fn () => 2,
+        fn () => 3,
+    );
+```
+
 ## Testing
 
 ```bash

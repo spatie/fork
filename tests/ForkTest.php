@@ -141,6 +141,20 @@ class ForkTest extends TestCase
         $this->assertCount(3, $result);
     }
 
+    /** @test */
+    public function output_in_after()
+    {
+        Fork::new()
+            ->after(
+                parent: function (int $i) {
+                    $this->assertEquals(1, $i);
+                },
+            )
+            ->run(
+                fn () => 1
+            );
+    }
+
     protected function assertTookLessThanSeconds(int $expectedLessThanSeconds)
     {
         $currentTime = microtime(true);

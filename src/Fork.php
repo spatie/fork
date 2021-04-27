@@ -82,12 +82,14 @@ class Fork
         while (count($runningProcesses)) {
             foreach ($runningProcesses as $key => $process) {
                 if ($process->isFinished()) {
-                    $output[$process->order()] = $process->output();
+                    $processOutput = $process->output();
+
+                    $output[$process->order()] = $processOutput;
 
                     unset($runningProcesses[$key]);
 
                     if ($this->toExecuteAfterInParentProcess) {
-                        ($this->toExecuteAfterInParentProcess)();
+                        ($this->toExecuteAfterInParentProcess)($processOutput);
                     }
                 }
             }
@@ -124,7 +126,7 @@ class Fork
         socket_write($socketToParent, $output);
 
         if ($this->toExecuteAfterInChildProcess) {
-            ($this->toExecuteAfterInChildProcess)();
+            ($this->toExecuteAfterInChildProcess)($output);
         }
 
         socket_close($socketToParent);
