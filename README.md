@@ -5,7 +5,7 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/spatie/fork/Check%20&%20fix%20styling?label=code%20style)](https://github.com/spatie/fork/actions?query=workflow%3A"Check+%26+fix+styling"+branch%3Amaster)
 [![Total Downloads](https://img.shields.io/packagist/dt/spatie/fork.svg?style=flat-square)](https://packagist.org/packages/spatie/fork)
 
-> ❗️ This package only works on Linux and Mac or any other systems that support [pcntl](https://www.php.net/manual/en/intro.pcntl.php) ❗  
+  
 
 This package makes it easy to run PHP concurrently. Behind the scenes, concurrency is achieved by forking the main PHP process to one or more child tasks.
 
@@ -36,6 +36,10 @@ support us by [buying one of our paid products](https://spatie.be/open-source/su
 We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using.
 You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards
 on [our virtual postcard wall](https://spatie.be/open-source/postcards).
+
+## Requirements
+
+This package requires PHP 8 and the [pcntl](https://www.php.net/manual/en/intro.pcntl.php) extensions which is installed in many Unix and Mac systems by default.
 
 ## Installation
 
