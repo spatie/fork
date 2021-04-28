@@ -5,6 +5,8 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/spatie/fork/Check%20&%20fix%20styling?label=code%20style)](https://github.com/spatie/fork/actions?query=workflow%3A"Check+%26+fix+styling"+branch%3Amaster)
 [![Total Downloads](https://img.shields.io/packagist/dt/spatie/fork.svg?style=flat-square)](https://packagist.org/packages/spatie/fork)
 
+> ❗️ This package only works on Linux and Mac or any other systems that support [pcntl](https://www.php.net/manual/en/intro.pcntl.php) ❗  
+
 This package makes it easy to run PHP concurrently. Behind the scenes, concurrency is achieved by forking the main PHP process to one or more child tasks.
 
 In this example, where we are going to call an imaginary slow API, all three closures will run at the same time.
