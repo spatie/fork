@@ -62,6 +62,34 @@ class ForkTest extends TestCase
     }
 
     /** @test */
+    public function it_can_limit_the_number_of_concurrent_tasks()
+    {
+        $results = Fork::new()
+            ->concurrent(2)
+            ->run(
+                function () {
+                    sleep(1);
+
+                    return 1 + 1;
+                },
+                function () {
+                    sleep(1);
+
+                    return 2 + 2;
+                },
+                function () {
+                    sleep(2);
+
+                    return 3 + 3;
+                },
+            );
+
+        $this->assertEquals([2, 4, 6], $results);
+
+        $this->assertTookGreaterThanSeconds(2);
+    }
+
+    /** @test */
     public function the_callable_given_to_before_runs_before_each_callable()
     {
         $results = Fork::new()
@@ -176,5 +204,14 @@ class ForkTest extends TestCase
         $usedTimeInSeconds = $currentTime - $this->startTime;
 
         $this->assertLessThan($expectedLessThanSeconds, $usedTimeInSeconds, "Took more than expected {$expectedLessThanSeconds} seconds");
+    }
+
+    protected function assertTookGreaterThanSeconds(int $expectedGreaterThanSeconds)
+    {
+        $currentTime = microtime(true);
+
+        $usedTimeInSeconds = $currentTime - $this->startTime;
+
+        $this->assertGreaterThan($expectedGreaterThanSeconds, $usedTimeInSeconds, "Took less than expected {$expectedGreaterThanSeconds} seconds");
     }
 }

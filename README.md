@@ -81,6 +81,29 @@ $results[2]; // contains 'result from task 3'
 
 The closures to run shouldn't return objects, only primitives and arrays are allowed.
 
+### Limiting the number of concurrent processes
+
+If you need to limit the number of concurrent processes, you can call `concurrent` with the maximum number of concurrent processes to execute, or `null` (the default) to allow unlimited processes. If set, `run` will execute the closures in groups of the provided size, in order.
+
+Use this when a large, or unknown number of processes will be ran (i.e. processing a large number of database results). Allowing unlimited process forks in this scenario would lead to very high CPU usage, and possibly hitting the user's max-process limit.
+
+You may find that in certain scenarios, limiting concurrency is more performant, due to the overhead associated with process forking (i.e. executing 1000 tasks is faster with a concurrency limit of 100).
+
+```php
+use Spatie\Fork\Fork;
+
+$results = Fork::new()
+    ->concurrent(2)
+    ->run(
+        // Concurrently executes the first 2 closures, and waits for them to complete
+        fn () => 1 + 1,
+        fn () => 2 + 2,
+
+        // Ran after the first 2 closures have completed their execution
+        fn () => 3 + 3,
+    );
+```
+
 ### Running code before and after each closure
 
 If you need to execute code some before or after each callable passed to `run`, you can pass a callable to `before` or `after`.  This callable passed  will be executed in the child process right before or after the callable passed to  `run` will execute.

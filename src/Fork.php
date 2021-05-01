@@ -11,6 +11,8 @@ class Fork
 
     protected ?Closure $toExecuteAfterInChildTask = null;
     protected ?Closure $toExecuteAfterInParentTask = null;
+    
+    protected ?int $concurrent = null;
 
     public static function new(): self
     {
@@ -33,7 +35,28 @@ class Fork
         return $this;
     }
 
+    public function concurrent(?int $concurrent): self
+    {
+        $this->concurrent = $concurrent;
+
+        return $this;
+    }
+
     public function run(callable ...$callables): array
+    {
+        if ($this->concurrent === null) {
+            return $this->runCallables(...$callables);
+        }
+
+        $output = [];
+        foreach (array_chunk($callables, $this->concurrent, true) as $callableGroup) {
+            array_push($output, ...$this->runCallables(...$callableGroup));
+        }
+        
+        return $output;
+    }
+
+    protected function runCallables(callable ...$callables): array
     {
         $tasks = [];
 
