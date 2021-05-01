@@ -58,17 +58,17 @@ $results = Fork::new()
     ->run(
         function ()  {
             sleep(1);
-        
+
             return 'result from task 1';
         },
         function ()  {
              sleep(1);
-        
+
             return 'result from task 2';
         },
         function ()  {
              sleep(1);
-        
+
             return 'result from task 3';
         },
     );
@@ -79,21 +79,19 @@ $results[1]; // contains 'result from task 2'
 $results[2]; // contains 'result from task 3'
 ```
 
-The closures to run shouldn't return objects, only primitives and arrays are allowed.
-
 ### Running code before and after each closure
 
-If you need to execute code some before or after each callable passed to `run`, you can pass a callable to `before` or `after`.  This callable passed  will be executed in the child process right before or after the callable passed to  `run` will execute.
+If you need to execute some code before or after each callable passed to `run`, you can pass a callable to `before` or `after` methods. This callable passed will be executed in the child process right before or after the execution of the callable passed to `run`.
 
 ### Using `before` and `after` in the child task
 
-Here's an example where we are going to get a value from the database using a Laravel Eloquent model. In order to let the child task use the DB, it is necessary to reconnect to the DB. The closure passed to `before` will run in both child taskes that are created for the closures passed to `run`.
+Here's an example where we are going to get a value from the database using a Laravel Eloquent model. In order to let the child task use the DB, it is necessary to reconnect to the DB. The closure passed to `before` will run in both child tasks that are created for the closures passed to `run`.
 
 ```php
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Spatie\Fork\Fork;
- 
+
  Fork::new()
     ->before(fn () => DB::connection('mysql')->reconnect())
     ->run(
@@ -102,7 +100,7 @@ use Spatie\Fork\Fork;
     );
 ```
 
-If you need to perform some cleanup in the child task after the callable has run, you can use the `after` method on a `Spatie\Fork\Fork` instance. 
+If you need to perform some cleanup in the child task after the callable has run, you can use the `after` method on a `Spatie\Fork\Fork` instance.
 
 ### Using `before` and `after` in the parent task.
 
@@ -112,7 +110,7 @@ If you need to let the callable passed to `before` or `after` run in the parent 
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Spatie\Fork\Fork;
- 
+
  Fork::new()
     ->before(
         parent: fn() => echo 'this runs in the parent task'
@@ -130,7 +128,7 @@ use Spatie\Fork\Fork;
 
 Fork::new()
     ->before(
-        child: fn() => echo 'this runs in the child task', 
+        child: fn() => echo 'this runs in the child task',
         parent: fn() => echo 'this runs in the parent task',
     )
     ->run(
