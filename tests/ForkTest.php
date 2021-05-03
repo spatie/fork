@@ -121,7 +121,7 @@ class ForkTest extends TestCase
         $value = 0;
 
         Fork::new()
-            ->before(parent: function () use (&$value) {
+            ->after(parent: function () use (&$value) {
                 $value++;
             })
             ->run(fn () => 1, fn () => 2);
