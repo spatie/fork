@@ -3,6 +3,7 @@
 namespace Spatie\Fork;
 
 use Closure;
+use Exception;
 
 class Fork
 {
@@ -11,6 +12,13 @@ class Fork
 
     protected ?Closure $toExecuteAfterInChildTask = null;
     protected ?Closure $toExecuteAfterInParentTask = null;
+
+    public function __construct()
+    {
+        if (! function_exists('pcntl_fork')) {
+            throw new Exception("Cannot create process forks: PCNTL is not supported on this system.");
+        }
+    }
 
     public static function new(): self
     {
