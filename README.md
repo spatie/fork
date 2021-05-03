@@ -66,12 +66,12 @@ $results = Fork::new()
             return 'result from task 1';
         },
         function ()  {
-             sleep(1);
+            sleep(1);
 
             return 'result from task 2';
         },
         function ()  {
-             sleep(1);
+            sleep(1);
 
             return 'result from task 3';
         },
