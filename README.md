@@ -5,6 +5,10 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/spatie/fork/Check%20&%20fix%20styling?label=code%20style)](https://github.com/spatie/fork/actions?query=workflow%3A"Check+%26+fix+styling"+branch%3Amaster)
 [![Total Downloads](https://img.shields.io/packagist/dt/spatie/fork.svg?style=flat-square)](https://packagist.org/packages/spatie/fork)
 
+> ❗️ This package only works on Linux and Mac or any other systems that support [pcntl](https://www.php.net/manual/en/intro.pcntl.php)
+
+> ❗️ [pcntl](https://www.php.net/manual/en/intro.pcntl.php) only works in CLI processes, not in a web context.
+
 This package makes it easy to run PHP concurrently. Behind the scenes, concurrency is achieved by forking the main PHP process to one or more child tasks.
 
 In this example, where we are going to call an imaginary slow API, all three closures will run at the same time.
@@ -58,17 +62,17 @@ $results = Fork::new()
     ->run(
         function ()  {
             sleep(1);
-        
+
             return 'result from task 1';
         },
         function ()  {
-             sleep(1);
-        
+            sleep(1);
+
             return 'result from task 2';
         },
         function ()  {
-             sleep(1);
-        
+            sleep(1);
+
             return 'result from task 3';
         },
     );
@@ -106,17 +110,17 @@ $results = Fork::new()
 
 ### Running code before and after each closure
 
-If you need to execute code some before or after each callable passed to `run`, you can pass a callable to `before` or `after`.  This callable passed  will be executed in the child process right before or after the callable passed to  `run` will execute.
+If you need to execute some code before or after each callable passed to `run`, you can pass a callable to `before` or `after` methods. This callable passed will be executed in the child process right before or after the execution of the callable passed to `run`.
 
 ### Using `before` and `after` in the child task
 
-Here's an example where we are going to get a value from the database using a Laravel Eloquent model. In order to let the child task use the DB, it is necessary to reconnect to the DB. The closure passed to `before` will run in both child taskes that are created for the closures passed to `run`.
+Here's an example where we are going to get a value from the database using a Laravel Eloquent model. In order to let the child task use the DB, it is necessary to reconnect to the DB. The closure passed to `before` will run in both child tasks that are created for the closures passed to `run`.
 
 ```php
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Spatie\Fork\Fork;
- 
+
  Fork::new()
     ->before(fn () => DB::connection('mysql')->reconnect())
     ->run(
@@ -125,7 +129,7 @@ use Spatie\Fork\Fork;
     );
 ```
 
-If you need to perform some cleanup in the child task after the callable has run, you can use the `after` method on a `Spatie\Fork\Fork` instance. 
+If you need to perform some cleanup in the child task after the callable has run, you can use the `after` method on a `Spatie\Fork\Fork` instance.
 
 ### Using `before` and `after` in the parent task.
 
@@ -135,7 +139,7 @@ If you need to let the callable passed to `before` or `after` run in the parent 
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Spatie\Fork\Fork;
- 
+
  Fork::new()
     ->before(
         parent: fn() => echo 'this runs in the parent task'
@@ -153,7 +157,7 @@ use Spatie\Fork\Fork;
 
 Fork::new()
     ->before(
-        child: fn() => echo 'this runs in the child task', 
+        child: fn() => echo 'this runs in the child task',
         parent: fn() => echo 'this runs in the parent task',
     )
     ->run(
