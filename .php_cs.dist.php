@@ -1,19 +1,16 @@
 <?php
 
-use PhpCsFixer\Config;
-use PhpCsFixer\Finder;
-
-$finder = Finder::create()
+$finder = Symfony\Component\Finder\Finder::create()
     ->in([
         __DIR__ . '/src',
         __DIR__ . '/tests',
     ])
+    ->name('*.php')
     ->notName('*.blade.php')
     ->ignoreDotFiles(true)
-    ->ignoreVCS(true)
-;
+    ->ignoreVCS(true);
 
-return (new Config())
+return (new PhpCsFixer\Config())
     ->setRules([
         '@PSR2' => true,
         'array_syntax' => ['syntax' => 'short'],
@@ -29,11 +26,6 @@ return (new Config())
         ],
         'phpdoc_single_line_var_spacing' => true,
         'phpdoc_var_without_name' => true,
-        'class_attributes_separation' => [
-            'elements' => [
-                'method',
-            ],
-        ],
         'method_argument_space' => [
             'on_multiline' => 'ensure_fully_multiline',
             'keep_multiple_spaces_after_comma' => true,
