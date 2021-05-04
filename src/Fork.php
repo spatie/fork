@@ -173,7 +173,6 @@ class Fork
         $this->runningTasks[] = $this->runTask($firstTask);
     }
 
-
     protected function startRunning(
         Task ...$queue
     ): void {
