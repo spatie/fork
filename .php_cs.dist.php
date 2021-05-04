@@ -1,6 +1,9 @@
 <?php
 
-$finder = \PhpCsFixer\Finder::create()
+use PhpCsFixer\Config;
+use PhpCsFixer\Finder;
+
+$finder = Finder::create()
     ->in([
         __DIR__ . '/src',
         __DIR__ . '/tests',
@@ -10,11 +13,11 @@ $finder = \PhpCsFixer\Finder::create()
     ->ignoreVCS(true)
 ;
 
-return (new \PhpCsFixer\Config())
+return (new Config())
     ->setRules([
         '@PSR2' => true,
         'array_syntax' => ['syntax' => 'short'],
-        'ordered_imports' => ['sortAlgorithm' => 'alpha'],
+        'ordered_imports' => ['sort_algorithm' => 'alpha'],
         'no_unused_imports' => true,
         'not_operator_with_successor_space' => true,
         'trailing_comma_in_multiline' => true,
