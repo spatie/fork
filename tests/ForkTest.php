@@ -37,19 +37,19 @@ class ForkTest extends TestCase
             ->concurrent(2)
             ->run(
                 function () {
-                    sleep(1);
+                    usleep(100);
 
-                    return Carbon::now()->second;
+                    return Carbon::now()->millisecond;
                 },
                 function () {
-                    sleep(1);
+                    usleep(100);
 
-                    return Carbon::now()->second;
+                    return Carbon::now()->millisecond;
                 },
                 function () {
-                    sleep(1);
+                    usleep(100);
 
-                    return Carbon::now()->second;
+                    return Carbon::now()->millisecond;
                 },
             );
 
@@ -60,33 +60,16 @@ class ForkTest extends TestCase
     /** @test */
     public function it_can_execute_the_closures_concurrently()
     {
-        $results = Fork::new()
+        Fork::new()
             ->run(
-                function () {
-                    sleep(1);
-
-                    return 1 + 1;
-                },
-                function () {
-                    sleep(2);
-
-                    return 2 + 2;
-                },
-                function () {
-                    sleep(1);
-
-                    return 3 + 3;
-                },
-                function () {
-                    sleep(1);
-
-                    return 4 + 4;
-                },
+                ...array_fill(
+                    start_index: 0,
+                    count: 20,
+                    value: fn () => usleep(100_000),
+                ) // 1/10th of a second each
             );
 
-        $this->assertEquals([2, 4, 6, 8], $results);
-
-        $this->assertTookLessThanSeconds(3);
+        $this->assertTookLessThanSeconds(1);
     }
 
     /** @test */
