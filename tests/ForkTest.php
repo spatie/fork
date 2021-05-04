@@ -37,19 +37,19 @@ class ForkTest extends TestCase
             ->concurrent(2)
             ->run(
                 function () {
-                    usleep(100);
+                    sleep(1);
 
-                    return Carbon::now()->millisecond;
+                    return Carbon::now()->second;
                 },
                 function () {
-                    usleep(100);
+                    sleep(1);
 
-                    return Carbon::now()->millisecond;
+                    return Carbon::now()->second;
                 },
                 function () {
-                    usleep(100);
+                    sleep(1);
 
-                    return Carbon::now()->millisecond;
+                    return Carbon::now()->second;
                 },
             );
 
