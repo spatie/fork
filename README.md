@@ -177,6 +177,22 @@ $result = Fork::new()
     );
 ```
 
+### Configuring concurrency
+
+By default, all callables will be run in parallel. You can however configure a maximum amount of concurrent processes:
+
+```php
+$results = Fork::new()
+    ->concurrent(2)
+    ->run(
+        fn () => 1,
+        fn () => 2,
+        fn () => 3,
+    );
+```
+
+In this case, the first two functions will be run immediately and as soon as one of them finishes, the last one will start as well.
+
 ## Testing
 
 ```bash
