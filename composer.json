@@ -25,6 +25,7 @@
         "ext-pcntl": "*"
     },
     "require-dev": {
+        "nesbot/carbon": "^2.47",
         "phpunit/phpunit": "^9.5",
         "spatie/ray": "^1.10"
     },

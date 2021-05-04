@@ -8,10 +8,14 @@ use Exception;
 class Fork
 {
     protected ?Closure $toExecuteBeforeInChildTask = null;
+
     protected ?Closure $toExecuteBeforeInParentTask = null;
 
     protected ?Closure $toExecuteAfterInChildTask = null;
+
     protected ?Closure $toExecuteAfterInParentTask = null;
+
+    protected ?int $concurrent = null;
 
     public function __construct()
     {
@@ -41,18 +45,19 @@ class Fork
         return $this;
     }
 
+    public function concurrent(int $concurrent): self
+    {
+        $this->concurrent = $concurrent;
+
+        return $this;
+    }
+
     public function run(callable ...$callables): array
     {
         $tasks = [];
 
         foreach ($callables as $order => $callable) {
-            if ($this->toExecuteBeforeInParentTask) {
-                ($this->toExecuteBeforeInParentTask)();
-            }
-
-            $task = Task::fromCallable($callable, $order);
-
-            $tasks[] = $this->forkForTask($task);
+            $tasks[] = Task::fromCallable($callable, $order);
         }
 
         return $this->waitFor(...$tasks);
@@ -80,26 +85,66 @@ class Fork
             ->setConnection($socketToChild);
     }
 
-    protected function waitFor(Task ...$runningTasks): array
+    protected function runTask(Task $task): Task
+    {
+        if ($this->toExecuteBeforeInParentTask) {
+            ($this->toExecuteBeforeInParentTask)();
+        }
+
+        return $this->forkForTask($task);
+    }
+
+    protected function finishTask(Task $task): mixed
+    {
+        $output = $task->output();
+
+        if ($this->toExecuteAfterInParentTask) {
+            ($this->toExecuteAfterInParentTask)($output);
+        }
+
+        return $output;
+    }
+
+    protected function waitFor(Task ...$queue): array
     {
         $output = [];
 
-        while (count($runningTasks)) {
-            foreach ($runningTasks as $key => $task) {
-                if ($task->isFinished()) {
-                    $taskOutput = $task->output();
+        $running = [];
 
-                    $output[$task->order()] = $taskOutput;
+        $amountRunning = 0;
 
-                    unset($runningTasks[$key]);
+        foreach ($queue as $i => $task) {
+            $running[] = $this->runTask($task);
 
-                    if ($this->toExecuteAfterInParentTask) {
-                        ($this->toExecuteAfterInParentTask)($taskOutput);
-                    }
+            unset($queue[$i]);
+
+            $amountRunning += 1;
+
+            if ($this->concurrent && $amountRunning >= $this->concurrent) {
+                break;
+            }
+        }
+
+        while (count($running)) {
+            foreach ($running as $key => $task) {
+                if (! $task->isFinished()) {
+                    continue;
+                }
+
+                $output[$task->order()] = $this->finishTask($task);
+
+                unset($running[$key]);
+
+                if (count($queue)) {
+                    $i = array_key_first($queue);
+
+                    $running[] = $this->runTask($queue[$i]);
+
+                    unset($queue[$i]);
                 }
             }
 
-            if (! count($runningTasks)) {
+            if (! count($running)) {
                 break;
             }
 

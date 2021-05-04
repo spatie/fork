@@ -2,6 +2,7 @@
 
 namespace Spatie\Fork\Tests;
 
+use Carbon\Carbon;
 use DateTime;
 use PHPUnit\Framework\TestCase;
 use Spatie\Fork\Fork;
@@ -27,6 +28,30 @@ class ForkTest extends TestCase
             );
 
         $this->assertEquals([2, 4], $results);
+    }
+
+    /** @test */
+    public function it_will_execute_the_given_closures_with_concurrency_cap()
+    {
+        $results = Fork::new()
+            ->concurrent(2)
+            ->run(
+                function () {
+                    sleep(1);
+                    return Carbon::now()->second;
+                },
+                function () {
+                    sleep(1);
+                    return Carbon::now()->second;
+                },
+                function () {
+                    sleep(1);
+                    return Carbon::now()->second;
+                },
+            );
+
+        $this->assertEquals($results[0], $results[1]);
+        $this->assertNotEquals($results[1], $results[2]);
     }
 
     /** @test */
