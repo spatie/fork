@@ -38,14 +38,17 @@ class ForkTest extends TestCase
             ->run(
                 function () {
                     sleep(1);
+
                     return Carbon::now()->second;
                 },
                 function () {
                     sleep(1);
+
                     return Carbon::now()->second;
                 },
                 function () {
                     sleep(1);
+
                     return Carbon::now()->second;
                 },
             );
