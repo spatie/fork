@@ -7,21 +7,26 @@ use Exception;
 
 class Fork
 {
-    protected ?Closure $toExecuteBeforeInChildTask = null;
+    /** @var ?Closure */
+    protected $toExecuteBeforeInChildTask = null;
 
-    protected ?Closure $toExecuteBeforeInParentTask = null;
+    /** @var ?Closure */
+    protected $toExecuteBeforeInParentTask = null;
 
-    protected ?Closure $toExecuteAfterInChildTask = null;
+    /** @var ?Closure */
+    protected $toExecuteAfterInChildTask = null;
 
-    protected ?Closure $toExecuteAfterInParentTask = null;
+    /** @var ?Closure */
+    protected $toExecuteAfterInParentTask = null;
 
-    protected ?int $concurrent = null;
+    /** @var ?Closure */
+    protected $concurrent = null;
 
     /** @var \Spatie\Fork\Task[] */
-    protected array $queue = [];
+    protected $queue = [];
 
     /** @var \Spatie\Fork\Task[] */
-    protected array $runningTasks = [];
+    protected $runningTasks = [];
 
     public function __construct()
     {
@@ -87,7 +92,7 @@ class Fork
             }
 
             if ($this->isRunning()) {
-                usleep(1_000);
+                usleep(1000);
             }
         }
 
@@ -103,7 +108,10 @@ class Fork
         return $this->forkForTask($task);
     }
 
-    protected function finishTask(Task $task): mixed
+    /**
+     * @return mixed
+     */
+    protected function finishTask(Task $task)
     {
         $output = $task->output();
 
@@ -145,7 +153,7 @@ class Fork
 
     protected function executeInChildTask(
         Task $task,
-        Connection $connectionToParent,
+        Connection $connectionToParent
     ): void {
         if ($this->toExecuteBeforeInChildTask) {
             ($this->toExecuteBeforeInChildTask)();

@@ -9,23 +9,32 @@ class Task
 {
     protected const SERIALIZATION_TOKEN = '[[serialized::';
 
-    protected string $name;
+    /** @var string */
+    protected $name;
 
-    protected int $order;
+    /** @var int */
+    protected $order;
 
-    protected int $pid;
+    /** @var int */
+    protected $pid;
 
-    protected int $status;
+    /** @var int */
+    protected $status;
 
-    protected Connection $connection;
+    /** @var Connection */
+    protected $connection;
 
-    protected ?Closure $successCallback = null;
+    /** @var ?Closure */
+    protected $successCallback = null;
 
-    protected int $startTime;
+    /** @var int */
+    protected $startTime;
 
-    protected Closure $callable;
+    /** @var Closure */
+    protected $callable;
 
-    protected string $output = '';
+    /** @var string */
+    protected $output = '';
 
     public static function fromCallable(callable $callable, int $order): self
     {
@@ -87,7 +96,10 @@ class Task
         return $this;
     }
 
-    public function execute(): string | bool
+    /**
+     * @return string|bool
+     */
+    public function execute()
     {
         $output = ($this->callable)();
 
@@ -98,7 +110,10 @@ class Task
         return self::SERIALIZATION_TOKEN . serialize($output);
     }
 
-    public function output(): mixed
+    /**
+     * @return mixed
+     */
+    public function output()
     {
         foreach ($this->connection->read() as $output) {
             $this->output .= $output;
@@ -143,7 +158,10 @@ class Task
         return false;
     }
 
-    public function triggerSuccessCallback(): mixed
+    /**
+     * @return mixed
+     */
+    public function triggerSuccessCallback()
     {
         if (! $this->successCallback) {
             return null;
