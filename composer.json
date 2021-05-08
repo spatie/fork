@@ -20,14 +20,13 @@
         }
     ],
     "require": {
-        "php": "^8.0",
-        "ext-sockets": "*",
-        "ext-pcntl": "*"
+        "php": "^7.1",
+        "ext-pcntl": "*",
+        "ext-sockets": "*"
     },
     "require-dev": {
         "nesbot/carbon": "^2.47",
-        "phpunit/phpunit": "^9.5",
-        "spatie/ray": "^1.10"
+        "phpunit/phpunit": "^7.5"
     },
     "autoload": {
         "psr-4": {
