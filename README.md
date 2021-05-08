@@ -14,9 +14,9 @@ use Spatie\Fork\Fork;
 
 $results = Fork::new()
     ->run(
-        fn () => (new Api)->fetchData(userId: 1),
-        fn () => (new Api)->fetchData(userId: 2),
-        fn () => (new Api)->fetchData(userId: 3),
+        function () { return (new Api)->fetchData(userId: 1); },
+        function () { return (new Api)->fetchData(userId: 2); },
+        function () { return (new Api)->fetchData(userId: 3); }
     );
 
 $results[0]; // fetched data of user 1
@@ -37,7 +37,7 @@ on [our virtual postcard wall](https://spatie.be/open-source/postcards).
 
 ## Requirements
 
-This package requires PHP 8 and the [pcntl](https://www.php.net/manual/en/intro.pcntl.php) extensions which is installed in many Unix and Mac systems by default.
+This package requires PHP 7.1 and the [pcntl](https://www.php.net/manual/en/intro.pcntl.php) extensions which is installed in many Unix and Mac systems by default.
 
 ❗️ [pcntl](https://www.php.net/manual/en/intro.pcntl.php) only works in CLI processes, not in a web context.
 
@@ -95,10 +95,10 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Fork\Fork;
 
  Fork::new()
-    ->before(fn () => DB::connection('mysql')->reconnect())
+    ->before(function () { return DB::connection('mysql')->reconnect()) }
     ->run(
-        fn () => User::find(1)->someLongRunningFunction(),
-        fn () => User::find(2)->someLongRunningFunction(),
+        function () { return User::find(1)->someLongRunningFunction(); },
+        function () { return User::find(2)->someLongRunningFunction(); }
     );
 ```
 
@@ -115,11 +115,12 @@ use Spatie\Fork\Fork;
 
  Fork::new()
     ->before(
-        parent: fn() => echo 'this runs in the parent task'
+        null,
+        function () { echo 'this runs in the parent task'; }
     )
     ->run(
-        fn () => User::find(1)->someLongRunningFunction(),
-        fn () => User::find(2)->someLongRunningFunction(),
+        function () { return User::find(1)->someLongRunningFunction(); },
+        function () { return User::find(2)->someLongRunningFunction(); }
     );
 ```
 
@@ -130,12 +131,12 @@ use Spatie\Fork\Fork;
 
 Fork::new()
     ->before(
-        child: fn() => echo 'this runs in the child task',
-        parent: fn() => echo 'this runs in the parent task',
+        function () { echo 'this runs in the child task'; },
+        function () { echo 'this runs in the parent task'; }
     )
     ->run(
-        fn () => User::find(1)->someLongRunningFunction(),
-        fn () => User::find(2)->someLongRunningFunction(),
+        function () { return User::find(1)->someLongRunningFunction(); },
+        function () { return User::find(2)->someLongRunningFunction(); }
     );
 ```
 
@@ -146,9 +147,9 @@ All output data is gathered in an array and available as soon as all children ar
 ```php
 $results = Fork::new()
     ->run(
-        fn () => (new Api)->fetchData(userId: 1),
-        fn () => (new Api)->fetchData(userId: 2),
-        fn () => (new Api)->fetchData(userId: 3),
+        function () { return (new Api)->fetchData(userId: 1); },
+        function () { return (new Api)->fetchData(userId: 2); },
+        function () { return (new Api)->fetchData(userId: 3); }
     );
 ```
 
@@ -157,13 +158,13 @@ The output is also available in the `after` callbacks, which are called whenever
 ```php
 $results = Fork::new()
     ->after(
-        child: fn (int $i) => echo $i, // 1, 2 and 3
-        parent: fn (int $i) => echo $i, // 1, 2 and 3
+        function (int $i) { echo $i; } // 1, 2 and 3
+        function (int $i) { echo $i; } // 1, 2 and 3
     )
     ->run(
-        fn () => 1,
-        fn () => 2,
-        fn () => 3,
+        function () { return 1; },
+        function () { return 2; },
+        function () { return 3; }
     );
 ```
 
@@ -172,8 +173,8 @@ Finally, return values from child tasks are serialized using PHP's built-in `ser
 ```php
 $result = Fork::new()
     ->run(
-        fn () => new DateTime('2021-01-01'),
-        fn () => new DateTime('2021-01-02'),
+        function () { return new DateTime('2021-01-01'); },
+        function () { return new DateTime('2021-01-02'); },
     );
 ```
 
@@ -185,9 +186,9 @@ By default, all callables will be run in parallel. You can however configure a m
 $results = Fork::new()
     ->concurrent(2)
     ->run(
-        fn () => 1,
-        fn () => 2,
-        fn () => 3,
+        function () { return 1; },
+        function () { return 2; },
+        function () { return 3; },
     );
 ```
 
