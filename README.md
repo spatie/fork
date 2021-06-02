@@ -23,6 +23,9 @@ $results[0]; // fetched data of user 1
 $results[1]; // fetched data of user 2
 $results[2]; // fetched data of user 3
 ```
+## How it works under the hood
+
+✨ In this [video on YouTube](https://www.youtube.com/watch?v=IJXzc46MFPM), we explain how the package works internally.
 
 ## Support us
 
