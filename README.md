@@ -216,7 +216,7 @@ Please review [our security policy](../../security/policy) on how to report secu
 
 ## Credits
 
-- [Brent Roose](https://github.com/brendt_gd)
+- [Brent Roose](https://github.com/brendt)
 - [Freek Van der Herten](https://github.com/freekmurze)
 - [All Contributors](../../contributors)
 
