@@ -7,12 +7,19 @@ use Socket;
 
 class Connection
 {
+    protected int $timeoutSeconds;
+    protected int $timeoutMicroseconds;
+
     protected function __construct(
         protected Socket $socket,
         protected int $bufferSize = 1024,
-        protected float $timeout = 0.1,
+        protected float $timeout = 0.0001,
     ) {
         socket_set_nonblock($this->socket);
+
+        $this->timeoutSeconds = floor($this->timeout);
+
+        $this->timeoutMicroseconds = ($this->timeout * 1_000_000) - ($this->timeoutSeconds * 1_000_000);
     }
 
     /**
@@ -48,7 +55,7 @@ class Connection
 
             $except = null;
 
-            $selectResult = socket_select($read, $write, $except, $this->timeout);
+            $selectResult = socket_select($read, $write, $except, $this->timeoutSeconds, $this->timeoutMicroseconds);
 
             if ($selectResult === false) {
                 break;
@@ -83,7 +90,7 @@ class Connection
 
             $except = null;
 
-            $selectResult = socket_select($read, $write, $except, $this->timeout);
+            $selectResult = socket_select($read, $write, $except, $this->timeoutSeconds, $this->timeoutMicroseconds);
 
             if ($selectResult === false) {
                 break;
