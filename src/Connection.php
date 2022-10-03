@@ -4,6 +4,7 @@ namespace Spatie\Fork;
 
 use Generator;
 use Socket;
+use ErrorException;
 
 class Connection
 {
@@ -55,7 +56,15 @@ class Connection
 
             $except = null;
 
-            $selectResult = socket_select($read, $write, $except, $this->timeoutSeconds, $this->timeoutMicroseconds);
+            try {
+                $selectResult = socket_select($read, $write, $except, $this->timeoutSeconds, $this->timeoutMicroseconds);
+            } catch (ErrorException $e) {
+                if ($this->isInterruptionErrorException()) {
+                    continue;
+                }
+
+                throw $e;
+            }
 
             if ($selectResult === false) {
                 break;
@@ -90,7 +99,15 @@ class Connection
 
             $except = null;
 
-            $selectResult = socket_select($read, $write, $except, $this->timeoutSeconds, $this->timeoutMicroseconds);
+            try {
+                $selectResult = socket_select($read, $write, $except, $this->timeoutSeconds, $this->timeoutMicroseconds);
+            } catch (ErrorException $e) {
+                if ($this->isInterruptionErrorException()) {
+                    continue;
+                }
+
+                throw $e;
+            }
 
             if ($selectResult === false) {
                 break;
@@ -108,5 +125,10 @@ class Connection
 
             yield $outputFromSocket;
         }
+    }
+
+    private function isInterruptionErrorException(): bool
+    {
+        return 4 === socket_last_error();
     }
 }
