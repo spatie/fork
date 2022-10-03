@@ -2,9 +2,9 @@
 
 namespace Spatie\Fork;
 
+use ErrorException;
 use Generator;
 use Socket;
-use ErrorException;
 
 class Connection
 {
