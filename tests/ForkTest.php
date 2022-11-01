@@ -1,9 +1,6 @@
 <?php
 
-namespace Spatie\Fork\Tests;
-
 use Carbon\Carbon;
-use DateTime;
 use Spatie\Fork\Fork;
 
 it('will execute the given closures', function () {
