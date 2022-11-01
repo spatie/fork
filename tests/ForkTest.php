@@ -4,188 +4,146 @@ namespace Spatie\Fork\Tests;
 
 use Carbon\Carbon;
 use DateTime;
-use PHPUnit\Framework\TestCase;
 use Spatie\Fork\Fork;
 
-class ForkTest extends TestCase
-{
-    protected float $startTime;
+it('will execute the given closures', function () {
+    $results = Fork::new()
+        ->run(
+            fn () => 1 + 1,
+            fn () => 2 + 2,
+        );
 
-    public function setUp(): void
-    {
-        parent::setUp();
+    expect($results)->toEqual([2, 4]);
+});
 
-        $this->startTime = microtime(true);
-    }
+it('will execute the given closure with concurrency cap ', function () {
+    $results = Fork::new()
+        ->concurrent(2)
+        ->run(
+            function () {
+                sleep(1);
 
-    /** @test */
-    public function it_will_execute_the_given_closures()
-    {
-        $results = Fork::new()
-            ->run(
-                fn () => 1 + 1,
-                fn () => 2 + 2,
-            );
+                return Carbon::now()->second;
+            },
+            function () {
+                sleep(1);
 
-        $this->assertEquals([2, 4], $results);
-    }
+                return Carbon::now()->second;
+            },
+            function () {
+                sleep(1);
 
-    /** @test */
-    public function it_will_execute_the_given_closures_with_concurrency_cap()
-    {
-        $results = Fork::new()
-            ->concurrent(2)
-            ->run(
-                function () {
-                    sleep(1);
+                return Carbon::now()->second;
+            },
+        );
 
-                    return Carbon::now()->second;
-                },
-                function () {
-                    sleep(1);
+    expect($results[1])->toEqual($results[0])
+        ->and($results[2])->not->toEqual($results[1]);
+});
 
-                    return Carbon::now()->second;
-                },
-                function () {
-                    sleep(1);
+it('can execute the closures concurrently', function () {
+    Fork::new()
+        ->run(
+            ...array_fill(
+                start_index: 0,
+                count: 20,
+                value: fn () => usleep(100_000),
+            ) // 1/10th of a second each
+        );
 
-                    return Carbon::now()->second;
-                },
-            );
+    assertTookLessThanSeconds(1);
+});
 
-        $this->assertEquals($results[0], $results[1]);
-        $this->assertNotEquals($results[1], $results[2]);
-    }
+test('the callable given to before runs before each callable', function () {
+    $results = Fork::new()
+        ->before(function () {
+            global $globalBeforeValue;
 
-    /** @test */
-    public function it_can_execute_the_closures_concurrently()
-    {
-        Fork::new()
-            ->run(
-                ...array_fill(
-                    start_index: 0,
-                    count: 20,
-                    value: fn () => usleep(100_000),
-                ) // 1/10th of a second each
-            );
+            $globalBeforeValue = 2;
+        })
+        ->run(function () {
+            global $globalBeforeValue;
 
-        $this->assertTookLessThanSeconds(1);
-    }
+            return 1 + $globalBeforeValue;
+        });
 
-    /** @test */
-    public function the_callable_given_to_before_runs_before_each_callable()
-    {
-        $results = Fork::new()
-            ->before(function () {
-                global $globalBeforeValue;
+    expect($results)->toEqual([3]);
+});
 
-                $globalBeforeValue = 2;
-            })
-            ->run(function () {
-                global $globalBeforeValue;
+test('the callable given to after runs after each callable', function () {
+    $results = Fork::new()
+        ->after(function () {
+            global $globalAfterValue;
 
-                return 1 + $globalBeforeValue;
-            });
-
-        $this->assertEquals([3], $results);
-    }
-
-    /** @test */
-    public function the_callable_given_to_after_runs_after_each_callable()
-    {
-        $results = Fork::new()
-            ->after(function () {
+            expect($globalAfterValue + 2)->toEqual(3);
+        })
+        ->run(
+            function () {
                 global $globalAfterValue;
 
-                $this->assertEquals(3, $globalAfterValue + 2);
-            })
-            ->run(
-                function () {
-                    global $globalAfterValue;
+                $globalAfterValue = 1;
 
-                    $globalAfterValue = 1;
+                return $globalAfterValue;
+            },
+        );
 
-                    return $globalAfterValue;
-                },
-            );
+    expect($results)->toEqual([1]);
+});
 
-        $this->assertEquals([1], $results);
-    }
+test('the callable given to before can be run in the parent process', function () {
+    $value = 0;
 
-    /** @test */
-    public function the_callable_given_to_before_can_be_run_in_the_parent_process()
-    {
-        $value = 0;
+    Fork::new()
+        ->before(parent: function () use (&$value) {
+            $value++;
+        })
+        ->run(fn () => 1, fn () => 2);
 
-        Fork::new()
-            ->before(parent: function () use (&$value) {
-                $value++;
-            })
-            ->run(fn () => 1, fn () => 2);
+    expect($value)->toEqual(2);
+});
 
-        $this->assertEquals(2, $value);
-    }
+test('the callable given to after can be run in the parent process', function () {
+    $value = 0;
 
-    /** @test */
-    public function the_callable_given_to_after_can_be_run_in_the_parent_process()
-    {
-        $value = 0;
+    Fork::new()
+        ->after(parent: function () use (&$value) {
+            $value++;
+        })
+        ->run(fn () => 1, fn () => 2);
 
-        Fork::new()
-            ->after(parent: function () use (&$value) {
-                $value++;
-            })
-            ->run(fn () => 1, fn () => 2);
+    expect($value)->toEqual(2);
+});
 
-        $this->assertEquals(2, $value);
-    }
+it('will not hang by truncating the result when large output is returned', function () {
+    $result = Fork::new()
+        ->run(
+            fn () => file_get_contents('https://stitcher.io/rss'),
+            fn () => file_get_contents('https://sebastiandedeyne.com/index.xml'),
+            fn () => file_get_contents('https://rubenvanassche.com/rss/'),
+        );
 
-    /** @test */
-    public function it_will_not_hang_by_truncating_the_result_when_large_output_is_returned()
-    {
-        $result = Fork::new()
-            ->run(
-                fn () => file_get_contents('https://stitcher.io/rss'),
-                fn () => file_get_contents('https://sebastiandedeyne.com/index.xml'),
-                fn () => file_get_contents('https://rubenvanassche.com/rss/'),
-            );
+    expect($result)->toHaveCount(3);
+});
 
-        $this->assertCount(3, $result);
-    }
+it('can return objects', function () {
+    $result = Fork::new()
+        ->run(
+            fn () => new DateTime('2021-01-01'),
+            fn () => new DateTime('2021-01-02'),
+        );
 
-    /** @test */
-    public function it_can_return_objects()
-    {
-        $result = Fork::new()
-            ->run(
-                fn () => new DateTime('2021-01-01'),
-                fn () => new DateTime('2021-01-02'),
-            );
+    expect($result[0]->format('Y-m-d'))->toEqual('2021-01-01')
+        ->and($result[1]->format('Y-m-d'))->toEqual('2021-01-02');
+});
 
-        $this->assertEquals('2021-01-01', $result[0]->format('Y-m-d'));
-        $this->assertEquals('2021-01-02', $result[1]->format('Y-m-d'));
-    }
-
-    /** @test */
-    public function output_in_after()
-    {
-        Fork::new()
-            ->after(
-                parent: function (int $i) {
-                    $this->assertEquals(1, $i);
-                },
-            )
-            ->run(
-                fn () => 1
-            );
-    }
-
-    protected function assertTookLessThanSeconds(int $expectedLessThanSeconds)
-    {
-        $currentTime = microtime(true);
-
-        $usedTimeInSeconds = $currentTime - $this->startTime;
-
-        $this->assertLessThan($expectedLessThanSeconds, $usedTimeInSeconds, "Took more than expected {$expectedLessThanSeconds} seconds");
-    }
-}
+test('output in after', function () {
+    Fork::new()
+        ->after(
+            parent: function (int $i) {
+                expect($i)->toEqual(1);
+            },
+        )
+        ->run(
+            fn () => 1
+        );
+});
