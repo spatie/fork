@@ -26,6 +26,7 @@
     },
     "require-dev": {
         "nesbot/carbon": "^2.47",
+        "pestphp/pest": "^1.22",
         "phpunit/phpunit": "^9.5",
         "spatie/ray": "^1.10"
     },
@@ -41,12 +42,15 @@
     },
     "scripts": {
         "psalm": "vendor/bin/psalm",
-        "test": "vendor/bin/phpunit",
-        "test-coverage": "vendor/bin/phpunit --coverage-html coverage",
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage-html coverage",
         "format": "vendor/bin/php-cs-fixer fix --allow-risky=yes --config=.php_cs.dist.php"
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
     },
     "minimum-stability": "dev",
     "prefer-stable": true
