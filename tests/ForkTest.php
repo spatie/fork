@@ -3,15 +3,13 @@
 use Carbon\Carbon;
 use Spatie\Fork\Fork;
 
-it('will execute the given closures', function () {
-    $results = Fork::new()
-        ->run(
+it('will execute the given closures')
+    ->expect(
+        fn () => Fork::new()->run(
             fn () => 1 + 1,
             fn () => 2 + 2,
-        );
-
-    expect($results)->toEqual([2, 4]);
-});
+        )
+    )->toEqual([2, 4]);
 
 it('will execute the given closure with concurrency cap ', function () {
     $results = Fork::new()
@@ -51,41 +49,39 @@ it('can execute the closures concurrently', function () {
     assertTookLessThanSeconds(1);
 });
 
-test('the callable given to before runs before each callable', function () {
-    $results = Fork::new()
-        ->before(function () {
-            global $globalBeforeValue;
+test('the callable given to before runs before each callable')
+    ->expect(
+        Fork::new()
+            ->before(function () {
+                global $globalBeforeValue;
 
-            $globalBeforeValue = 2;
-        })
-        ->run(function () {
-            global $globalBeforeValue;
+                $globalBeforeValue = 2;
+            })
+            ->run(function () {
+                global $globalBeforeValue;
 
-            return 1 + $globalBeforeValue;
-        });
+                return 1 + $globalBeforeValue;
+            })
+    )->toEqual([3]);
 
-    expect($results)->toEqual([3]);
-});
-
-test('the callable given to after runs after each callable', function () {
-    $results = Fork::new()
-        ->after(function () {
-            global $globalAfterValue;
-
-            expect($globalAfterValue + 2)->toEqual(3);
-        })
-        ->run(
-            function () {
+test('the callable given to after runs after each callable')
+    ->expect(
+        Fork::new()
+            ->after(function () {
                 global $globalAfterValue;
 
-                $globalAfterValue = 1;
+                expect($globalAfterValue + 2)->toEqual(3);
+            })
+            ->run(
+                function () {
+                    global $globalAfterValue;
 
-                return $globalAfterValue;
-            },
-        );
+                    $globalAfterValue = 1;
 
-    expect($results)->toEqual([1]);
-});
+                    return $globalAfterValue;
+                },
+            )
+    )->toEqual([1]);
 
 test('the callable given to before can be run in the parent process', function () {
     $value = 0;
@@ -111,16 +107,14 @@ test('the callable given to after can be run in the parent process', function ()
     expect($value)->toEqual(2);
 });
 
-it('will not hang by truncating the result when large output is returned', function () {
-    $result = Fork::new()
-        ->run(
+it('will not hang by truncating the result when large output is returned')
+    ->expect(
+        Fork::new()->run(
             fn () => file_get_contents('https://stitcher.io/rss'),
             fn () => file_get_contents('https://sebastiandedeyne.com/index.xml'),
             fn () => file_get_contents('https://rubenvanassche.com/rss/'),
-        );
-
-    expect($result)->toHaveCount(3);
-});
+        )
+    )->toHaveCount(3);
 
 it('can return objects', function () {
     $result = Fork::new()
