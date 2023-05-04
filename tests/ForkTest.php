@@ -39,11 +39,7 @@ it('will execute the given closure with concurrency cap ', function () {
 it('can execute the closures concurrently', function () {
     Fork::new()
         ->run(
-            ...array_fill(
-                start_index: 0,
-                count: 20,
-                value: fn () => usleep(100_000),
-            ) // 1/10th of a second each
+            ...array_fill(0, 20, fn () => usleep(100_000)) // 1/10th of a second each
         );
 
     assertTookLessThanSeconds(1);
@@ -87,7 +83,7 @@ test('the callable given to before can be run in the parent process', function (
     $value = 0;
 
     Fork::new()
-        ->before(parent: function () use (&$value) {
+        ->before(null, function () use (&$value) {
             $value++;
         })
         ->run(fn () => 1, fn () => 2);
@@ -99,7 +95,7 @@ test('the callable given to after can be run in the parent process', function ()
     $value = 0;
 
     Fork::new()
-        ->after(parent: function () use (&$value) {
+        ->after(null, function () use (&$value) {
             $value++;
         })
         ->run(fn () => 1, fn () => 2);
@@ -129,11 +125,9 @@ it('can return objects', function () {
 
 test('output in after', function () {
     Fork::new()
-        ->after(
-            parent: function (int $i) {
-                expect($i)->toEqual(1);
-            },
-        )
+        ->after(null, function (int $i) {
+            expect($i)->toEqual(1);
+        })
         ->run(
             fn () => 1
         );

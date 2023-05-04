@@ -26,7 +26,7 @@ class Fork
     public function __construct()
     {
         if (! function_exists('pcntl_fork')) {
-            throw new Exception("Cannot create process forks: PCNTL is not supported on this system.");
+            throw new Exception('Cannot create process forks: PCNTL is not supported on this system.');
         }
     }
 
@@ -103,7 +103,7 @@ class Fork
         return $this->forkForTask($task);
     }
 
-    protected function finishTask(Task $task): mixed
+    protected function finishTask(Task $task)
     {
         $output = $task->output();
 
@@ -143,10 +143,8 @@ class Fork
         return $pid === 0;
     }
 
-    protected function executeInChildTask(
-        Task $task,
-        Connection $connectionToParent,
-    ): void {
+    protected function executeInChildTask(Task $task, Connection $connectionToParent): void
+    {
         if ($this->toExecuteBeforeInChildTask) {
             ($this->toExecuteBeforeInChildTask)();
         }
@@ -173,9 +171,8 @@ class Fork
         $this->runningTasks[] = $this->runTask($firstTask);
     }
 
-    protected function startRunning(
-        Task ...$queue
-    ): void {
+    protected function startRunning(Task ...$queue): void
+    {
         $this->queue = $queue;
 
         foreach ($this->queue as $task) {

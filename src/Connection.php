@@ -4,19 +4,29 @@ namespace Spatie\Fork;
 
 use ErrorException;
 use Generator;
-use Socket;
 
 class Connection
 {
+    /** @var \Socket */
+    protected $socket;
+
+    protected int $bufferSize = 1024;
+
+    protected float $timeout = 0.0001;
+
     protected int $timeoutSeconds;
+
     protected int $timeoutMicroseconds;
 
-    protected function __construct(
-        protected Socket $socket,
-        protected int $bufferSize = 1024,
-        protected float $timeout = 0.0001,
-    ) {
+    protected function __construct($socket, int $bufferSize = 1024, float $timeout = 0.0001)
+    {
+        $this->socket = $socket;
+
         socket_set_nonblock($this->socket);
+
+        $this->bufferSize = $bufferSize;
+
+        $this->timeout = $timeout;
 
         $this->timeoutSeconds = floor($this->timeout);
 
