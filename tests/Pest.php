@@ -29,6 +29,6 @@ function assertTookLessThanSeconds(int $expectedLessThanSeconds): void
     assertLessThan(
         $expectedLessThanSeconds,
         $usedTimeInSeconds,
-        "Took more than expected {$expectedLessThanSeconds} seconds"
+        "Took more than expected $expectedLessThanSeconds seconds"
     );
 }
