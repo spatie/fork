@@ -127,6 +127,10 @@ class Fork
 
             $this->executeInChildTask($task, $socketToParent);
 
+            if (extension_loaded('posix')) {
+                posix_kill(getmypid(), SIGKILL);
+            }
+
             exit;
         }
 
