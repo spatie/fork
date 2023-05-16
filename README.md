@@ -46,6 +46,7 @@ on [our virtual postcard wall](https://spatie.be/open-source/postcards).
 This package requires PHP 8 and the [pcntl](https://www.php.net/manual/en/intro.pcntl.php) extensions which is installed in many Unix and Mac systems by default.
 
 ❗️ [pcntl](https://www.php.net/manual/en/intro.pcntl.php) only works in CLI processes, not in a web context.
+❗️ [posix](https://www.php.net/manual/en/book.posix.php) required for correct handling of process termination for Alpine Linux.
 
 ## Installation
 
