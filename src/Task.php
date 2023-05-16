@@ -112,7 +112,8 @@ class Task
 
         if (str_starts_with($output, self::SERIALIZATION_TOKEN)) {
             $output = unserialize(
-                substr($output, strlen(self::SERIALIZATION_TOKEN))
+                substr($output, strlen(self::SERIALIZATION_TOKEN)),
+                ['allowed_classes' => true]
             );
         }
 
@@ -149,6 +150,6 @@ class Task
             return null;
         }
 
-        return call_user_func_array($this->successCallback, [$this]);
+        return call_user_func($this->successCallback, $this);
     }
 }

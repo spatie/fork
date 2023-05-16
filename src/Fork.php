@@ -164,7 +164,7 @@ class Fork
 
     protected function shiftTaskFromQueue(): void
     {
-        if (! count($this->queue)) {
+        if (empty($this->queue)) {
             return;
         }
 
@@ -191,7 +191,7 @@ class Fork
 
     protected function isRunning(): bool
     {
-        return count($this->runningTasks) > 0;
+        return ! empty($this->runningTasks);
     }
 
     protected function concurrencyLimitReached(): bool
