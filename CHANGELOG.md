@@ -2,6 +2,22 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.1.3 - 2023-05-16
+
+### What's Changed
+
+- Refactor tests to Pest by @alexmanase in https://github.com/spatie/fork/pull/33
+- Fixed php-cs-fixer by @zKoz210 in https://github.com/spatie/fork/pull/40
+- Fixed tests for PHP 8.2 by @zKoz210 in https://github.com/spatie/fork/pull/38
+- Fixed #36 by @zKoz210 in https://github.com/spatie/fork/pull/39
+
+### New Contributors
+
+- @alexmanase made their first contribution in https://github.com/spatie/fork/pull/33
+- @zKoz210 made their first contribution in https://github.com/spatie/fork/pull/40
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.1.2...1.1.3
+
 ## 1.1.2 - 2022-10-03
 
 ### What's Changed
