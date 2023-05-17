@@ -73,6 +73,7 @@ class Fork
     {
         $output = [];
 
+        $this->listenForSignals();
         $this->startRunning(...$queue);
 
         while ($this->isRunning()) {
@@ -121,8 +122,6 @@ class Fork
         [$socketToParent, $socketToChild] = Connection::createPair();
 
         $processId = pcntl_fork();
-
-        $this->listenForSignals();
 
         if ($this->currentlyInChildTask($processId)) {
             $socketToChild->close();
