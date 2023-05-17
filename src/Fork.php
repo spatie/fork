@@ -122,16 +122,16 @@ class Fork
 
         $processId = pcntl_fork();
 
+        $this->listenForSignals();
+
         if ($this->currentlyInChildTask($processId)) {
             $socketToChild->close();
 
-            $this->executeInChildTask($task, $socketToParent);
-
-            if (extension_loaded('posix')) {
-                posix_kill(getmypid(), SIGKILL);
+            try {
+                $this->executeInChildTask($task, $socketToParent);
+            } finally {
+                $this->exit();
             }
-
-            exit;
         }
 
         $socketToParent->close();
@@ -140,6 +140,29 @@ class Fork
             ->setStartTime(time())
             ->setPid($processId)
             ->setConnection($socketToChild);
+    }
+
+    /**
+     * Enable async signals for the process.
+     *
+     * @return void
+     */
+    protected function listenForSignals(): void
+    {
+        pcntl_async_signals(true);
+
+        pcntl_signal(SIGQUIT, fn () => $this->exit());
+        pcntl_signal(SIGTERM, fn () => $this->exit());
+        pcntl_signal(SIGINT, fn () => $this->exit());
+    }
+
+    protected function exit(): void
+    {
+        if (extension_loaded('posix')) {
+            posix_kill(getmypid(), SIGKILL);
+        }
+
+        exit;
     }
 
     protected function currentlyInChildTask(int $pid): bool
