@@ -2,6 +2,14 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.2.0 - 2023-05-29
+
+### What's Changed
+
+- Listen signals for terminating process by @zKoz210 in https://github.com/spatie/fork/pull/42
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.1.3...1.2.0
+
 ## 1.1.3 - 2023-05-16
 
 ### What's Changed
