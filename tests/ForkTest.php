@@ -2,6 +2,7 @@
 
 use Carbon\Carbon;
 use Spatie\Fork\Fork;
+use Spatie\Fork\Task;
 
 it('will execute the given closures')
     ->expect(
@@ -137,4 +138,25 @@ test('output in after', function () {
         ->run(
             fn () => 1
         );
+});
+
+
+it('custom process name', function () {
+    $tasks = [];
+
+    for ($order = 0; $order < 3; $order++) {
+        $taskName = "Async Process Name. Index: $order";
+
+        $task = Task::fromCallable(fn () => cli_get_process_title() === $taskName, $order);
+        $task->setName($taskName);
+
+        $tasks[] = $task;
+    }
+
+    $result = Fork::new()
+        ->runTasks(...$tasks);
+
+    expect($result[0])->toBeBool()
+        ->and($result[1])->toBeBool()
+        ->and($result[2])->toBeBool();
 });

@@ -9,7 +9,7 @@ class Task
 {
     protected const SERIALIZATION_TOKEN = '[[serialized::';
 
-    protected string $name;
+    protected string $name = '';
 
     protected int $order;
 

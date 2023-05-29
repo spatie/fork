@@ -66,10 +66,10 @@ class Fork
             $tasks[] = Task::fromCallable($callable, $order);
         }
 
-        return $this->waitFor(...$tasks);
+        return $this->runTasks(...$tasks);
     }
 
-    protected function waitFor(Task ...$queue): array
+    public function runTasks(Task ...$queue): array
     {
         $output = [];
 
@@ -122,6 +122,10 @@ class Fork
         [$socketToParent, $socketToChild] = Connection::createPair();
 
         $processId = pcntl_fork();
+
+        if ($task->name()) {
+            cli_set_process_title($task->name());
+        }
 
         if ($this->currentlyInChildTask($processId)) {
             $socketToChild->close();
