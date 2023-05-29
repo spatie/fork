@@ -156,7 +156,7 @@ it('custom process name', function () {
     $result = Fork::new()
         ->runTasks(...$tasks);
 
-    expect($result[0])->toBeBool()
-        ->and($result[1])->toBeBool()
-        ->and($result[2])->toBeBool();
+    expect($result[0])->toEqual(true)
+        ->and($result[1])->toEqual(true)
+        ->and($result[2])->toEqual(true);
 });
