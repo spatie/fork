@@ -2,6 +2,18 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.2.1 - 2023-11-23
+
+### What's Changed
+
+- Kill any forked tasks when force closed in terminal by @stevebauman in https://github.com/spatie/fork/pull/48
+
+### New Contributors
+
+- @stevebauman made their first contribution in https://github.com/spatie/fork/pull/48
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.2.0...1.2.1
+
 ## 1.2.0 - 2023-05-29
 
 ### What's Changed
