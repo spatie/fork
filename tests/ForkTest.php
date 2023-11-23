@@ -11,7 +11,7 @@ it('will execute the given closures')
         )
     )->toEqual([2, 4]);
 
-it('will execute the given closure with concurrency cap ', function () {
+it('will execute the given closure with concurrency cap', function () {
     $results = Fork::new()
         ->concurrent(2)
         ->run(

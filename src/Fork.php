@@ -157,11 +157,15 @@ class Fork
 
     protected function exit(): void
     {
-        if (extension_loaded('posix')) {
-            posix_kill(getmypid(), SIGKILL);
+        if (! extension_loaded('posix')) {
+            exit;
         }
 
-        exit;
+        foreach ($this->runningTasks as $task) {
+            posix_kill($task->pid(), SIGKILL);
+        }
+
+        posix_kill(getmypid(), SIGKILL);
     }
 
     protected function currentlyInChildTask(int $pid): bool
