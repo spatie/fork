@@ -177,7 +177,7 @@ class Fork
             ($this->toExecuteBeforeInChildTask)();
         }
 
-        $output = $task->execute();
+        $output = $task->execute(fn () => $this->exit());
 
         $connectionToParent->write($output);
 

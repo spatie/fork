@@ -87,9 +87,9 @@ class Task
         return $this;
     }
 
-    public function execute(): string | bool
+    public function execute(Closure $terminate): string | bool
     {
-        $output = ($this->callable)();
+        $output = ($this->callable)($terminate);
 
         if (is_string($output)) {
             return $output;
