@@ -2,6 +2,18 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.2.2 - 2023-12-07
+
+### What's Changed
+
+* Switch from kill-all-exit to a normal exit when a child is done by @puggan in https://github.com/spatie/fork/pull/51
+
+### New Contributors
+
+* @puggan made their first contribution in https://github.com/spatie/fork/pull/51
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.2.1...1.2.2
+
 ## 1.2.1 - 2023-11-23
 
 ### What's Changed
