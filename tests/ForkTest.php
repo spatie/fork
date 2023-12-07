@@ -138,3 +138,17 @@ test('output in after', function () {
             fn () => 1
         );
 });
+
+test('allow 2nd process to be done before the 1st')
+    ->expect(
+        fn () => Fork::new()->run(
+            static function () {
+                usleep(200_000);
+                return 2;
+            },
+            static function () {
+                usleep(100_000);
+                return 1;
+            },
+        )
+    )->toEqual([2,1]);
