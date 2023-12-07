@@ -129,7 +129,7 @@ class Fork
             try {
                 $this->executeInChildTask($task, $socketToParent);
             } finally {
-                $this->exit();
+                exit();
             }
         }
 
