@@ -144,10 +144,12 @@ test('allow 2nd process to be done before the 1st')
         fn () => Fork::new()->run(
             static function () {
                 usleep(200_000);
+
                 return 2;
             },
             static function () {
                 usleep(100_000);
+
                 return 1;
             },
         )
