@@ -154,3 +154,43 @@ test('allow 2nd process to be done before the 1st')
             },
         )
     )->toEqual([2,1]);
+
+test('the callable given to before can be used to identify task by order', function () {
+    $taskIds = [];
+
+    $callables = [
+        fn () => 'result from task 1',
+        fn () => 'result from task 2',
+    ];
+
+    Fork::new()
+        ->before(parent: function ($task) use (&$taskIds) {
+            $taskIds[] = sprintf('identify task %d : %s', $task->order() + 1, $task->name());
+        })
+        ->run(...$callables);
+
+    expect($taskIds)->toBe([
+        'identify task 1 : 0',
+        'identify task 2 : 1',
+    ]);
+});
+
+test('the callable given to before can be used to identify task by name', function () {
+    $taskIds = [];
+
+    $callables = [
+        'TaskId_1' => fn () => 'result from task 1',
+        'TaskId_2' => fn () => 'result from task 2',
+    ];
+
+    Fork::new()
+        ->before(parent: function ($task) use (&$taskIds) {
+            $taskIds[] = sprintf('identify task %d : %s', $task->order() + 1, $task->name());
+        })
+        ->run(...$callables);
+
+    expect($taskIds)->toBe([
+        'identify task 1 : TaskId_1',
+        'identify task 2 : TaskId_2',
+    ]);
+});
