@@ -63,7 +63,10 @@ class Fork
         $tasks = [];
 
         foreach ($callables as $order => $callable) {
-            $tasks[] = Task::fromCallable($callable, $order);
+            $name = $order;
+            $order = is_int($order) ? $order : count($tasks);
+            $task = Task::fromCallable($callable, $order)->setName($name);
+            $tasks[] = $task;
         }
 
         return $this->waitFor(...$tasks);
@@ -82,7 +85,8 @@ class Fork
                     continue;
                 }
 
-                $output[$task->order()] = $this->finishTask($task);
+                $taskId = empty($task->name()) ? $task->order() : $task->name();
+                $output[$taskId] = $this->finishTask($task);
 
                 $this->shiftTaskFromQueue();
             }
@@ -98,7 +102,7 @@ class Fork
     protected function runTask(Task $task): Task
     {
         if ($this->toExecuteBeforeInParentTask) {
-            ($this->toExecuteBeforeInParentTask)();
+            ($this->toExecuteBeforeInParentTask)($task);
         }
 
         return $this->forkForTask($task);
