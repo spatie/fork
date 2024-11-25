@@ -107,6 +107,30 @@ test('the callable given to after can be run in the parent process', function ()
     expect($value)->toEqual(2);
 });
 
+test('events of child processes are isolated from each other', function () {
+    $value = 2;
+    Fork::new()
+        ->before(function () use(&$value) {
+            $value++;
+            global $x;
+            $x=1;
+        })
+        ->after(function () use(&$value) {
+            $value++;
+            global $x;
+            expect($x)->toEqual(2);
+        })
+        ->run(function () {
+            global $x;
+            $x++;
+        }, function () {
+            global $x;
+            $x++;
+        });
+
+    expect($value)->toEqual(2);
+});
+
 it('will not hang by truncating the result when large output is returned')
     ->expect(
         Fork::new()->run(
