@@ -56,14 +56,10 @@ class Connection
 
             $except = null;
 
-            try {
-                $selectResult = socket_select($read, $write, $except, $this->timeoutSeconds, $this->timeoutMicroseconds);
-            } catch (ErrorException $e) {
-                if ($this->isInterruptionErrorException()) {
-                    continue;
-                }
+            $selectResult = @socket_select($read, $write, $except, $this->timeoutSeconds, $this->timeoutMicroseconds);
 
-                throw $e;
+            if ($selectResult === false && socket_last_error() === SOCKET_EINTR) {
+                continue;
             }
 
             if ($selectResult === false) {
@@ -99,14 +95,10 @@ class Connection
 
             $except = null;
 
-            try {
-                $selectResult = socket_select($read, $write, $except, $this->timeoutSeconds, $this->timeoutMicroseconds);
-            } catch (ErrorException $e) {
-                if ($this->isInterruptionErrorException()) {
-                    continue;
-                }
+            $selectResult = @socket_select($read, $write, $except, $this->timeoutSeconds, $this->timeoutMicroseconds);
 
-                throw $e;
+            if ($selectResult === false && socket_last_error() === SOCKET_EINTR) {
+                continue;
             }
 
             if ($selectResult === false) {
@@ -125,10 +117,5 @@ class Connection
 
             yield $outputFromSocket;
         }
-    }
-
-    private function isInterruptionErrorException(): bool
-    {
-        return 4 === socket_last_error();
     }
 }
