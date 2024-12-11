@@ -2,7 +2,6 @@
 
 namespace Spatie\Fork;
 
-use ErrorException;
 use Generator;
 use Socket;
 
