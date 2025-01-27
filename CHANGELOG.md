@@ -2,6 +2,18 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.2.4 - 2025-01-27
+
+### What's Changed
+
+* [REMOVE] PHP 8.4 deprecation warnings by @yabooodya in https://github.com/spatie/fork/pull/66
+
+### New Contributors
+
+* @yabooodya made their first contribution in https://github.com/spatie/fork/pull/66
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.2.3...1.2.4
+
 ## 1.2.3 - 2024-12-11
 
 ### What's Changed
