@@ -35,7 +35,7 @@ class Fork
         return new self();
     }
 
-    public function before(callable $child = null, callable $parent = null): self
+    public function before(?callable $child = null, ?callable $parent = null): self
     {
         $this->toExecuteBeforeInChildTask = $child;
         $this->toExecuteBeforeInParentTask = $parent;
@@ -43,7 +43,7 @@ class Fork
         return $this;
     }
 
-    public function after(callable $child = null, callable $parent = null): self
+    public function after(?callable $child = null, ?callable $parent = null): self
     {
         $this->toExecuteAfterInChildTask = $child;
         $this->toExecuteAfterInParentTask = $parent;
