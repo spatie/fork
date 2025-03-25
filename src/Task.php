@@ -3,6 +3,7 @@
 namespace Spatie\Fork;
 
 use Closure;
+use ReflectionClass;
 use Spatie\Fork\Exceptions\CouldNotManageTask;
 use Throwable;
 
@@ -95,7 +96,27 @@ class Task
         try {
             $output = ($this->callable)();
         } catch (Throwable $e) {
-            return self::EXCEPTION_TOKEN . serialize($e);
+            $reflection = new ReflectionClass($e);
+            $constructor = $reflection->getConstructor();
+            $parameters = [];
+
+            if ($constructor) {
+                $declaringClass = $constructor->getDeclaringClass()->getName();
+
+                if ($declaringClass === $reflection->getName()) {
+                    foreach ($constructor->getParameters() as $parameter) {
+                        $parameters[$parameter->name] = $e->{$parameter->name} ?? null;
+                    }
+                }
+            }
+
+            return self::EXCEPTION_TOKEN . serialize([
+                    'exception' => get_class($e),
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'parameters' => $parameters,
+            ]);
         }
 
         if (is_string($output)) {
@@ -118,8 +139,14 @@ class Task
         $output = $this->output;
 
         if (str_starts_with($output, self::EXCEPTION_TOKEN)) {
-            throw unserialize(
+            $data = unserialize(
                 substr($output, strlen(self::EXCEPTION_TOKEN))
+            );
+
+            throw new $data['exception'](
+                ...(! empty(array_filter($data['parameters']))
+                ? $data['parameters']
+                : [$data['message']])
             );
         }
 
