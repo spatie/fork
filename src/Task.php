@@ -4,10 +4,13 @@ namespace Spatie\Fork;
 
 use Closure;
 use Spatie\Fork\Exceptions\CouldNotManageTask;
+use Throwable;
 
 class Task
 {
     protected const SERIALIZATION_TOKEN = '[[serialized::';
+
+    protected const EXCEPTION_TOKEN = '[[exception::';
 
     protected string $name;
 
@@ -89,7 +92,11 @@ class Task
 
     public function execute(): string | bool
     {
-        $output = ($this->callable)();
+        try {
+            $output = ($this->callable)();
+        } catch (Throwable $e) {
+            return self::EXCEPTION_TOKEN . serialize($e);
+        }
 
         if (is_string($output)) {
             return $output;
@@ -109,6 +116,12 @@ class Task
         $this->triggerSuccessCallback();
 
         $output = $this->output;
+
+        if (str_starts_with($output, self::EXCEPTION_TOKEN)) {
+            throw unserialize(
+                substr($output, strlen(self::EXCEPTION_TOKEN))
+            );
+        }
 
         if (str_starts_with($output, self::SERIALIZATION_TOKEN)) {
             $output = unserialize(
