@@ -1,7 +1,7 @@
 # Project Title
 
 ## Description
-A brief overview of the project.
+This project helps users navigate efficiently using AI.
 
 ## How to Run
 1. Install dependencies
