@@ -1,7 +1,7 @@
 # Project Title
 
 ## Description
-A brief overview of the project.
+This project provides smart navigation solutions.
 
 ## How to Run
 1. Install dependencies
