@@ -1,17 +1,18 @@
 <?php
 
 use Carbon\Carbon;
+use Spatie\Fork\Exceptions\CouldNotManageTask;
 use Spatie\Fork\Fork;
 
-it('will execute the given closures')
+test('will execute the given closures')
     ->expect(
         fn () => Fork::new()->run(
             fn () => 1 + 1,
             fn () => 2 + 2,
         )
-    )->toEqual([2, 4]);
+    )->toEqual([2, 4])->not()->toThrow(CouldNotManageTask::class);
 
-it('will execute the given closure with concurrency cap', function () {
+test('will execute the given closure with concurrency cap', function () {
     $results = Fork::new()
         ->concurrent(2)
         ->run(
@@ -36,21 +37,21 @@ it('will execute the given closure with concurrency cap', function () {
         ->and($results[2])->not->toEqual($results[1]);
 });
 
-it('can execute the closures concurrently', function () {
+test('can execute the closures concurrently', function () {
     Fork::new()
         ->run(
             ...array_fill(
-                start_index: 0,
-                count: 20,
-                value: fn () => usleep(100_000),
-            ) // 1/10th of a second each
+            start_index: 0,
+            count: 20,
+            value: fn () => usleep(100_000),
+        ) // 1/10th of a second each
         );
 
     assertTookLessThanSeconds(1);
 });
 
-test('the callable given to before runs before each callable')
-    ->expect(
+test('the callable given to before runs before each callable', function() {
+    expect(
         Fork::new()
             ->before(function () {
                 global $globalBeforeValue;
@@ -63,9 +64,10 @@ test('the callable given to before runs before each callable')
                 return 1 + $globalBeforeValue;
             })
     )->toEqual([3]);
+});
 
-test('the callable given to after runs after each callable')
-    ->expect(
+test('the callable given to after runs after each callable', function() {
+    expect(
         Fork::new()
             ->after(function () {
                 global $globalAfterValue;
@@ -82,6 +84,7 @@ test('the callable given to after runs after each callable')
                 },
             )
     )->toEqual([1]);
+});
 
 test('the callable given to before can be run in the parent process', function () {
     $value = 0;
@@ -131,16 +134,17 @@ test('events of child processes are isolated from each other', function () {
     expect($value)->toEqual(2);
 });
 
-it('will not hang by truncating the result when large output is returned')
-    ->expect(
+test('will not hang by truncating the result when large output is returned', function() {
+    expect(
         Fork::new()->run(
             fn () => file_get_contents('https://stitcher.io/rss'),
             fn () => file_get_contents('https://sebastiandedeyne.com/index.xml'),
             fn () => file_get_contents('https://rubenvanassche.com/rss/'),
         )
     )->toHaveCount(3);
+});
 
-it('can return objects', function () {
+test('can return objects', function () {
     $result = Fork::new()
         ->run(
             fn () => new DateTime('2021-01-01'),
@@ -163,9 +167,9 @@ test('output in after', function () {
         );
 });
 
-test('allow 2nd process to be done before the 1st')
-    ->expect(
-        fn () => Fork::new()->run(
+test('allow 2nd process to be done before the 1st', function() {
+    expect(
+        Fork::new()->run(
             static function () {
                 usleep(200_000);
 
@@ -178,3 +182,15 @@ test('allow 2nd process to be done before the 1st')
             },
         )
     )->toEqual([2,1]);
+});
+
+test('it throws exception in case of unexpected exit status', function() {
+    expect(
+        fn() => Fork::new()->run(
+            static function() {
+                exit(1);
+            },
+        )
+    )->toThrow(CouldNotManageTask::class);
+
+});
