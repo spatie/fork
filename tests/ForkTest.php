@@ -41,16 +41,16 @@ test('can execute the closures concurrently', function () {
     Fork::new()
         ->run(
             ...array_fill(
-            start_index: 0,
-            count: 20,
-            value: fn () => usleep(100_000),
-        ) // 1/10th of a second each
+                start_index: 0,
+                count: 20,
+                value: fn () => usleep(100_000),
+            ) // 1/10th of a second each
         );
 
     assertTookLessThanSeconds(1);
 });
 
-test('the callable given to before runs before each callable', function() {
+test('the callable given to before runs before each callable', function () {
     expect(
         Fork::new()
             ->before(function () {
@@ -66,7 +66,7 @@ test('the callable given to before runs before each callable', function() {
     )->toEqual([3]);
 });
 
-test('the callable given to after runs after each callable', function() {
+test('the callable given to after runs after each callable', function () {
     expect(
         Fork::new()
             ->after(function () {
@@ -134,7 +134,7 @@ test('events of child processes are isolated from each other', function () {
     expect($value)->toEqual(2);
 });
 
-test('will not hang by truncating the result when large output is returned', function() {
+test('will not hang by truncating the result when large output is returned', function () {
     expect(
         Fork::new()->run(
             fn () => file_get_contents('https://stitcher.io/rss'),
@@ -167,7 +167,7 @@ test('output in after', function () {
         );
 });
 
-test('allow 2nd process to be done before the 1st', function() {
+test('allow 2nd process to be done before the 1st', function () {
     expect(
         Fork::new()->run(
             static function () {
@@ -184,10 +184,10 @@ test('allow 2nd process to be done before the 1st', function() {
     )->toEqual([2,1]);
 });
 
-test('it throws exception in case of unexpected exit status', function() {
+test('it throws exception in case of unexpected exit status', function () {
     expect(
-        fn() => Fork::new()->run(
-            static function() {
+        fn () => Fork::new()->run(
+            static function () {
                 exit(1);
             },
         )
