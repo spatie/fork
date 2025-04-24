@@ -117,7 +117,7 @@ class Fork
         return $output;
     }
 
-    protected function forkForTask(Task $task): Task
+    protected function forkForTask(Task $task): ?Task
     {
         [$socketToParent, $socketToChild] = Connection::createPair();
 
@@ -129,8 +129,13 @@ class Fork
             try {
                 $this->executeInChildTask($task, $socketToParent);
             } finally {
-                exit();
+                if (! extension_loaded('posix')) {
+                    exit();
+                }
+
+                posix_kill(getmypid(), SIGKILL);
             }
+
         }
 
         $socketToParent->close();
@@ -158,7 +163,7 @@ class Fork
     protected function exit(): void
     {
         if (! extension_loaded('posix')) {
-            exit;
+            exit();
         }
 
         foreach ($this->runningTasks as $task) {
