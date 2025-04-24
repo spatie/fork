@@ -2,6 +2,18 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.2.5 - 2025-04-24
+
+### What's Changed
+
+* Fix task exit status handling, uniformize process exit method and tests by @jchambon-equativ in https://github.com/spatie/fork/pull/74
+
+### New Contributors
+
+* @jchambon-equativ made their first contribution in https://github.com/spatie/fork/pull/74
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.2.4...1.2.5
+
 ## 1.2.4 - 2025-01-27
 
 ### What's Changed
