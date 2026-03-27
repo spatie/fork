@@ -2,6 +2,15 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.2.6 - 2026-03-27
+
+### What's Changed
+
+* Fix truncation of large payloads by @obelloc in #83
+* Update CI to test PHP 8.0 through 8.5
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.2.5...1.2.6
+
 ## 1.2.5 - 2025-04-24
 
 ### What's Changed
