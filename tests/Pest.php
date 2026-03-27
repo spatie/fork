@@ -1,24 +1,14 @@
 <?php
 
+use PHPUnit\Framework\TestCase;
+
 use function PHPUnit\Framework\assertLessThan;
 
-/*
-|--------------------------------------------------------------------------
-| Test Case
-|--------------------------------------------------------------------------
-*/
-
-uses(\PHPUnit\Framework\TestCase::class)
+uses(TestCase::class)
     ->beforeEach(function () {
         $this->startTime = microtime(true);
     })
     ->in('.');
-
-/*
-|--------------------------------------------------------------------------
-| Functions
-|--------------------------------------------------------------------------
-*/
 
 function assertTookLessThanSeconds(int $expectedLessThanSeconds): void
 {

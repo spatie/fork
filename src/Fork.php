@@ -17,22 +17,22 @@ class Fork
 
     protected ?int $concurrent = null;
 
-    /** @var \Spatie\Fork\Task[] */
+    /** @var Task[] */
     protected array $queue = [];
 
-    /** @var \Spatie\Fork\Task[] */
+    /** @var Task[] */
     protected array $runningTasks = [];
 
     public function __construct()
     {
         if (! function_exists('pcntl_fork')) {
-            throw new Exception("Cannot create process forks: PCNTL is not supported on this system.");
+            throw new Exception('Cannot create process forks: PCNTL is not supported on this system.');
         }
     }
 
     public static function new(): self
     {
-        return new self();
+        return new self;
     }
 
     public function before(?callable $child = null, ?callable $parent = null): self
@@ -135,7 +135,6 @@ class Fork
 
                 posix_kill(getmypid(), SIGKILL);
             }
-
         }
 
         $socketToParent->close();
@@ -146,11 +145,6 @@ class Fork
             ->setConnection($socketToChild);
     }
 
-    /**
-     * Enable async signals for the process.
-     *
-     * @return void
-     */
     protected function listenForSignals(): void
     {
         pcntl_async_signals(true);
@@ -208,9 +202,8 @@ class Fork
         $this->runningTasks[] = $this->runTask($firstTask);
     }
 
-    protected function startRunning(
-        Task ...$queue
-    ): void {
+    protected function startRunning(Task ...$queue): void
+    {
         $this->queue = $queue;
 
         foreach ($this->queue as $task) {

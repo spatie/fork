@@ -184,7 +184,7 @@ test('allow 2nd process to be done before the 1st', function () {
                 return 1;
             },
         )
-    )->toEqual([2,1]);
+    )->toEqual([2, 1]);
 });
 
 test('it throws exception in case of unexpected exit status', function () {
