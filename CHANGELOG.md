@@ -2,6 +2,29 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.2.7 - 2026-03-27
+
+### What's Changed
+
+* Require PHP 8.3+
+* Upgrade to Pest 4 / PHPUnit 12
+* Replace php-cs-fixer with Laravel Pint
+* Modernize phpunit.xml.dist for PHPUnit 12
+* Use constructor property promotion and first-class callable syntax
+* Fix `Task::execute()` return type (`string` instead of `string|bool`)
+* Update all GitHub Actions to current versions
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.2.6...1.2.7
+
+## 1.2.6 - 2026-03-27
+
+### What's Changed
+
+* Fix truncation of large payloads by @obelloc in #83
+* Update CI to test PHP 8.0 through 8.5
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.2.5...1.2.6
+
 ## 1.2.5 - 2025-04-24
 
 ### What's Changed

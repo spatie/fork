@@ -20,14 +20,14 @@
         }
     ],
     "require": {
-        "php": "^8.0",
-        "ext-sockets": "*",
-        "ext-pcntl": "*"
+        "php": "^8.3",
+        "ext-pcntl": "*",
+        "ext-sockets": "*"
     },
     "require-dev": {
-        "nesbot/carbon": "^2.66",
-        "pestphp/pest": "^1.23",
-        "phpunit/phpunit": "^9.5",
+        "laravel/pint": "^1.0",
+        "nesbot/carbon": "^2.66|^3.0",
+        "pestphp/pest": "^4.0",
         "spatie/ray": "^1.10"
     },
     "autoload": {
@@ -43,7 +43,7 @@
     "scripts": {
         "test": "vendor/bin/pest",
         "test-coverage": "vendor/bin/pest --coverage-html coverage",
-        "format": "vendor/bin/php-cs-fixer fix --allow-risky=yes --config=.php_cs.php"
+        "format": "vendor/bin/pint"
     },
     "config": {
         "sort-packages": true,

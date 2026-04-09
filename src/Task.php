@@ -11,8 +11,6 @@ class Task
 
     protected string $name;
 
-    protected int $order;
-
     protected int $pid;
 
     protected int $status;
@@ -32,11 +30,9 @@ class Task
         return new self($callable, $order);
     }
 
-    public function __construct(callable $callable, int $order)
+    public function __construct(callable $callable, protected int $order)
     {
-        $this->callable = Closure::fromCallable($callable);
-
-        $this->order = $order;
+        $this->callable = $callable(...);
     }
 
     public function setName(string $name): self
@@ -80,14 +76,14 @@ class Task
         return $this->startTime;
     }
 
-    public function setStartTime($startTime): self
+    public function setStartTime(int $startTime): self
     {
         $this->startTime = $startTime;
 
         return $this;
     }
 
-    public function execute(): string | bool
+    public function execute(): string
     {
         $output = ($this->callable)();
 
@@ -95,7 +91,7 @@ class Task
             return $output;
         }
 
-        return self::SERIALIZATION_TOKEN . serialize($output);
+        return self::SERIALIZATION_TOKEN.serialize($output);
     }
 
     public function output(): mixed

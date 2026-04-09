@@ -135,13 +135,16 @@ test('events of child processes are isolated from each other', function () {
 });
 
 test('will not hang by truncating the result when large output is returned', function () {
+    $value = str_repeat('#', 1048576); // 1MB
     expect(
-        Fork::new()->run(
-            fn () => file_get_contents('https://stitcher.io/rss'),
-            fn () => file_get_contents('https://sebastiandedeyne.com/index.xml'),
-            fn () => file_get_contents('https://rubenvanassche.com/rss/'),
+        // compare md5 instead of content to avoid large text dumps in case the test fails
+        array_map(
+            'md5',
+            Fork::new()->run(
+                ...array_fill(0, 16, fn () => $value)
+            )
         )
-    )->toHaveCount(3);
+    )->toEqual(array_fill(0, 16, md5($value)));
 });
 
 test('can return objects', function () {
@@ -181,7 +184,7 @@ test('allow 2nd process to be done before the 1st', function () {
                 return 1;
             },
         )
-    )->toEqual([2,1]);
+    )->toEqual([2, 1]);
 });
 
 test('it throws exception in case of unexpected exit status', function () {
@@ -192,5 +195,4 @@ test('it throws exception in case of unexpected exit status', function () {
             },
         )
     )->toThrow(CouldNotManageTask::class);
-
 });
