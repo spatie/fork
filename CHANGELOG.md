@@ -2,6 +2,14 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.2.8 - 2026-09-14
+
+### What's Changed
+
+* Fix `TypeError` from `socket_create_pair()` when Swoole runtime hooks are enabled (#93) in #94
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.2.7...1.2.8
+
 ## 1.2.7 - 2026-03-27
 
 ### What's Changed
