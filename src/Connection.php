@@ -20,6 +20,8 @@ class Connection
      */
     public static function createPair(): array
     {
+        $sockets = [];
+
         socket_create_pair(AF_UNIX, SOCK_STREAM, 0, $sockets);
 
         [$socketToParent, $socketToChild] = $sockets;
