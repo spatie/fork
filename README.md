@@ -143,6 +143,40 @@ Fork::new()
     );
 ```
 
+### Using `before` and `after` to perform a timeout
+
+If you want to put a limit on how long a child task can run, making use of pcntl_alarm() is an easy way to do that.
+
+Building off of the first example, you could do the following to cap a child task at 60 seconds:
+
+
+```php
+use Spatie\Fork\Fork;
+
+$results = Fork::new()
+    ->before(function () {
+        // this is the code that is run if the alarm time is exceeded, 
+        // which is to kill the process and exit with a non 0
+        pcntl_signal(SIGALRM, function () {
+            posix_kill(getmypid(), SIGKILL);
+            exit(1);
+        });
+
+        // 60 is the number of seconds for your timeout, 
+        // you can change this to anything
+        pcntl_alarm(60);
+    })
+    ->after(function () {
+        // Clear the alarm on a successful set of processing
+        pcntl_alarm(0);
+    })
+    ->run(
+        fn () => (new Api)->fetchData(userId: 1),
+        fn () => (new Api)->fetchData(userId: 2),
+        fn () => (new Api)->fetchData(userId: 3),
+    );
+```
+
 ### Returning data
 
 All output data is gathered in an array and available as soon as all children are done. In this example, `$results` will contain three items:
