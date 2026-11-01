@@ -196,3 +196,93 @@ test('it throws exception in case of unexpected exit status', function () {
         )
     )->toThrow(CouldNotManageTask::class);
 });
+
+test('the signal handlers installed before run are restored afterwards', function () {
+    $handler = fn () => null;
+    pcntl_signal(SIGTERM, $handler);
+
+    try {
+        Fork::new()->run(fn () => 1);
+
+        expect(pcntl_signal_get_handler(SIGTERM))->toBe($handler);
+    } finally {
+        pcntl_signal(SIGTERM, SIG_DFL);
+    }
+});
+
+test('a signal received while running is handed on to the handler installed before run', function () {
+    $receivedSignals = [];
+    pcntl_signal(SIGTERM, function (int $signal) use (&$receivedSignals) {
+        $receivedSignals[] = $signal;
+    });
+
+    try {
+        $results = Fork::new()
+            ->concurrent(2)
+            ->run(
+                static function () {
+                    usleep(200_000);
+                    posix_kill(posix_getppid(), SIGTERM);
+                    sleep(10);
+                },
+                static fn () => sleep(10),
+                static fn () => 'never started',
+            );
+
+        expect($receivedSignals)->toBe([SIGTERM])
+            ->and($results)->not->toHaveKey(2);
+
+        assertTookLessThanSeconds(5);
+    } finally {
+        pcntl_signal(SIGTERM, SIG_DFL);
+    }
+});
+
+test('a signal that was ignored before run stays ignored', function () {
+    pcntl_signal(SIGTERM, SIG_IGN);
+
+    try {
+        $results = Fork::new()->run(
+            static function () {
+                posix_kill(posix_getppid(), SIGTERM);
+
+                return 'first task';
+            },
+            static function () {
+                usleep(200_000);
+
+                return 'second task';
+            },
+        );
+
+        expect($results)->toEqual(['first task', 'second task'])
+            ->and(pcntl_signal_get_handler(SIGTERM))->toBe(SIG_IGN);
+    } finally {
+        pcntl_signal(SIGTERM, SIG_DFL);
+    }
+});
+
+test('a signal received while running still ends the process when no handler was installed before run', function () {
+    $script = sprintf(<<<'PHP'
+        require %s;
+
+        Spatie\Fork\Fork::new()->run(
+            static function () {
+                usleep(200_000);
+                posix_kill(posix_getppid(), SIGTERM);
+                sleep(10);
+            },
+            static fn () => sleep(10),
+        );
+
+        echo 'run() returned';
+        PHP, var_export(__DIR__.'/../vendor/autoload.php', true));
+
+    // Child tasks still running would keep the output pipe open, so this would take 10 seconds
+    exec(PHP_BINARY.' -r '.escapeshellarg($script).' 2>&1', $output, $exitCode);
+
+    expect($exitCode)->toBe(128 + SIGTERM)
+        ->and($output)->not->toContain('run() returned');
+
+    assertTookLessThanSeconds(5);
+});
