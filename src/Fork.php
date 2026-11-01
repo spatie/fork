@@ -4,6 +4,7 @@ namespace Spatie\Fork;
 
 use Closure;
 use Exception;
+use Spatie\Fork\Exceptions\CouldNotManageTask;
 
 class Fork
 {
@@ -121,7 +122,14 @@ class Fork
     {
         [$socketToParent, $socketToChild] = Connection::createPair();
 
-        $processId = pcntl_fork();
+        $processId = $this->fork();
+
+        if ($processId === -1) {
+            $socketToParent->close();
+            $socketToChild->close();
+
+            throw CouldNotManageTask::forkFailed(pcntl_strerror(pcntl_get_last_error()));
+        }
 
         if ($this->currentlyInChildTask($processId)) {
             $socketToChild->close();
@@ -143,6 +151,14 @@ class Fork
             ->setStartTime(time())
             ->setPid($processId)
             ->setConnection($socketToChild);
+    }
+
+    /**
+     * Returns the child's process id in the parent, 0 in the child, and -1 when no child could be created.
+     */
+    protected function fork(): int
+    {
+        return pcntl_fork();
     }
 
     protected function listenForSignals(): void

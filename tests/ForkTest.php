@@ -196,3 +196,16 @@ test('it throws exception in case of unexpected exit status', function () {
         )
     )->toThrow(CouldNotManageTask::class);
 });
+
+test('it throws exception when a child process cannot be forked', function () {
+    $fork = new class extends Fork
+    {
+        protected function fork(): int
+        {
+            return -1;
+        }
+    };
+
+    expect(fn () => $fork->run(fn () => 1))
+        ->toThrow(CouldNotManageTask::class, 'Could not fork a child process for the task');
+});
