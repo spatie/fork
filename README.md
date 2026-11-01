@@ -231,6 +231,25 @@ $results = Fork::new()
 
 In this case, the first two functions will be run immediately and as soon as one of them finishes, the last one will start as well.
 
+### Handling exceptions
+
+By default, a child task that throws an exception returns an empty string. To find out what went wrong, pass a callback to `catch`. The exception is sent to the parent process, and passed to the callback together with the position of the task in the `run` call. Whatever the callback returns becomes the output of that task:
+
+```php
+$results = Fork::new()
+    ->catch(function (Throwable $exception, int $order) {
+        report($exception);
+
+        return null;
+    })
+    ->run(
+        fn () => (new Api)->fetchData(userId: 1),
+        fn () => (new Api)->fetchData(userId: 2),
+    );
+```
+
+The other tasks keep running. If an exception can't be serialized (for example because it holds a closure), the callback receives a `Spatie\Fork\Exceptions\TaskFailed` exception instead, with the original exception's class, message, file and line.
+
 ## Testing
 
 ```bash

@@ -4,10 +4,14 @@ namespace Spatie\Fork;
 
 use Closure;
 use Spatie\Fork\Exceptions\CouldNotManageTask;
+use Spatie\Fork\Exceptions\TaskFailed;
+use Throwable;
 
 class Task
 {
     protected const SERIALIZATION_TOKEN = '[[serialized::';
+
+    protected const EXCEPTION_TOKEN = '[[exception::';
 
     protected string $name;
 
@@ -24,6 +28,8 @@ class Task
     protected Closure $callable;
 
     protected string $output = '';
+
+    protected ?Throwable $exception = null;
 
     public static function fromCallable(callable $callable, int $order): self
     {
@@ -83,9 +89,17 @@ class Task
         return $this;
     }
 
-    public function execute(): string
+    public function execute(bool $catchExceptions = false): string
     {
-        $output = ($this->callable)();
+        try {
+            $output = ($this->callable)();
+        } catch (Throwable $exception) {
+            if (! $catchExceptions) {
+                throw $exception;
+            }
+
+            return self::EXCEPTION_TOKEN.$this->serializeException($exception);
+        }
 
         if (is_string($output)) {
             return $output;
@@ -106,6 +120,14 @@ class Task
 
         $output = $this->output;
 
+        if (str_starts_with($output, self::EXCEPTION_TOKEN)) {
+            $this->exception = $this->unserializeException(
+                substr($output, strlen(self::EXCEPTION_TOKEN))
+            );
+
+            return null;
+        }
+
         if (str_starts_with($output, self::SERIALIZATION_TOKEN)) {
             $output = unserialize(
                 substr($output, strlen(self::SERIALIZATION_TOKEN))
@@ -113,6 +135,40 @@ class Task
         }
 
         return $output;
+    }
+
+    /**
+     * The exception the task threw, when exceptions are caught (see Fork::catch()).
+     */
+    public function exception(): ?Throwable
+    {
+        return $this->exception;
+    }
+
+    /**
+     * The exception itself is sent when it can be serialized, and a description of it when it can't (for example
+     * because it holds a closure), so the parent always gets to know what went wrong.
+     */
+    protected function serializeException(Throwable $exception): string
+    {
+        try {
+            $serialized = serialize(['exception' => $exception]);
+
+            if (unserialize($serialized) !== false) {
+                return $serialized;
+            }
+        } catch (Throwable) {
+            // Fall through to the description
+        }
+
+        return serialize(['description' => TaskFailed::describe($exception)]);
+    }
+
+    protected function unserializeException(string $serialized): Throwable
+    {
+        $payload = unserialize($serialized);
+
+        return $payload['exception'] ?? TaskFailed::fromDescription($payload['description']);
     }
 
     public function onSuccess(callable $callback): self

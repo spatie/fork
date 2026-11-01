@@ -15,6 +15,8 @@ class Fork
 
     protected ?Closure $toExecuteAfterInParentTask = null;
 
+    protected ?Closure $catchCallback = null;
+
     protected ?int $concurrent = null;
 
     /** @var Task[] */
@@ -47,6 +49,18 @@ class Fork
     {
         $this->toExecuteAfterInChildTask = $child;
         $this->toExecuteAfterInParentTask = $parent;
+
+        return $this;
+    }
+
+    /**
+     * Without a catch callback, an exception thrown in a child task makes it return an empty string. With one, the
+     * exception is sent to the parent process and passed to the callback, together with the task's order. Whatever
+     * the callback returns becomes the output of the task.
+     */
+    public function catch(callable $callback): self
+    {
+        $this->catchCallback = $callback(...);
 
         return $this;
     }
@@ -107,6 +121,10 @@ class Fork
     protected function finishTask(Task $task): mixed
     {
         $output = $task->output();
+
+        if ($task->exception() && $this->catchCallback) {
+            $output = ($this->catchCallback)($task->exception(), $task->order());
+        }
 
         if ($this->toExecuteAfterInParentTask) {
             ($this->toExecuteAfterInParentTask)($output);
@@ -180,7 +198,7 @@ class Fork
             ($this->toExecuteBeforeInChildTask)();
         }
 
-        $output = $task->execute();
+        $output = $task->execute(catchExceptions: $this->catchCallback !== null);
 
         $connectionToParent->write($output);
 

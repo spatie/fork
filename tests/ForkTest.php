@@ -2,6 +2,7 @@
 
 use Carbon\Carbon;
 use Spatie\Fork\Exceptions\CouldNotManageTask;
+use Spatie\Fork\Exceptions\TaskFailed;
 use Spatie\Fork\Fork;
 
 test('will execute the given closures')
@@ -195,4 +196,72 @@ test('it throws exception in case of unexpected exit status', function () {
             },
         )
     )->toThrow(CouldNotManageTask::class);
+});
+
+test('a task that throws returns an empty string when there is no catch callback', function () {
+    expect(
+        Fork::new()->run(
+            static fn () => throw new RuntimeException('Something went wrong'),
+            static fn () => 'second task',
+        )
+    )->toEqual(['', 'second task']);
+});
+
+test('the catch callback receives the exception and the order of the task that threw', function () {
+    $results = Fork::new()
+        ->catch(fn (Throwable $exception, int $order) => get_class($exception).": {$exception->getMessage()} in task {$order}")
+        ->run(
+            static fn () => 'first task',
+            static fn () => throw new RuntimeException('Something went wrong', 42),
+        );
+
+    expect($results)->toEqual(['first task', 'RuntimeException: Something went wrong in task 1']);
+});
+
+test('the catch callback receives the original exception', function () {
+    $caught = null;
+
+    Fork::new()
+        ->catch(function (Throwable $exception) use (&$caught) {
+            $caught = $exception;
+        })
+        ->run(static fn () => throw new RuntimeException('Something went wrong', 42));
+
+    expect($caught)->toBeInstanceOf(RuntimeException::class)
+        ->and($caught->getMessage())->toBe('Something went wrong')
+        ->and($caught->getCode())->toBe(42)
+        ->and($caught->getFile())->toBe(__FILE__);
+});
+
+test('the output of the catch callback is passed to the callable given to after in the parent process', function () {
+    $outputs = [];
+
+    Fork::new()
+        ->catch(fn (Throwable $exception) => 'caught')
+        ->after(parent: function ($output) use (&$outputs) {
+            $outputs[] = $output;
+        })
+        ->run(static fn () => throw new RuntimeException('Something went wrong'));
+
+    expect($outputs)->toBe(['caught']);
+});
+
+test('the catch callback receives a description of an exception that cannot be serialized', function () {
+    $caught = null;
+
+    Fork::new()
+        ->catch(function (Throwable $exception) use (&$caught) {
+            $caught = $exception;
+        })
+        ->run(static function () {
+            throw new class('Holds a closure') extends RuntimeException
+            {
+                public Closure $callback;
+            };
+        });
+
+    expect($caught)->toBeInstanceOf(TaskFailed::class)
+        ->and($caught->getMessage())->toContain('Holds a closure')
+        ->and($caught->originalClass)->toContain('RuntimeException@anonymous')
+        ->and($caught->getFile())->toBe(__FILE__);
 });
