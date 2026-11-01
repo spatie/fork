@@ -60,8 +60,10 @@ class Connection
                 break;
             }
 
-            if ($selectResult <= 0) {
-                break;
+            // The parent hasn't read anything yet (eg. it is busy in an after() callback): keep waiting rather than
+            // cutting the output short. If the parent has gone away, socket_write() fails below instead.
+            if ($selectResult === 0) {
+                continue;
             }
 
             $length = strlen($payload);
