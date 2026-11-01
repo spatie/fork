@@ -248,7 +248,7 @@ $results = Fork::new()
     );
 ```
 
-The other tasks keep running. If an exception can't be serialized (for example because it holds a closure), the callback receives a `Spatie\Fork\Exceptions\TaskFailed` exception instead, with the original exception's class, message, file and line.
+The other tasks keep running. A task whose return value can't be serialized (for example a closure) is caught the same way, with the exception PHP threw while serializing it. If an exception can't be serialized itself, the callback receives a `Spatie\Fork\Exceptions\TaskFailed` exception instead, with the original exception's class, message, file and line.
 
 ## Testing
 

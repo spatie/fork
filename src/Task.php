@@ -93,6 +93,13 @@ class Task
     {
         try {
             $output = ($this->callable)();
+
+            if (is_string($output)) {
+                return $output;
+            }
+
+            // Serialized inside the try, so a return value that can't be serialized reaches catch() too
+            return self::SERIALIZATION_TOKEN.serialize($output);
         } catch (Throwable $exception) {
             if (! $catchExceptions) {
                 throw $exception;
@@ -100,12 +107,6 @@ class Task
 
             return self::EXCEPTION_TOKEN.$this->serializeException($exception);
         }
-
-        if (is_string($output)) {
-            return $output;
-        }
-
-        return self::SERIALIZATION_TOKEN.serialize($output);
     }
 
     public function output(): mixed

@@ -265,3 +265,21 @@ test('the catch callback receives a description of an exception that cannot be s
         ->and($caught->originalClass)->toContain('RuntimeException@anonymous')
         ->and($caught->getFile())->toBe(__FILE__);
 });
+
+test('the catch callback receives the exception when the output of a task cannot be serialized', function () {
+    $caught = null;
+
+    $results = Fork::new()
+        ->catch(function (Throwable $exception) use (&$caught) {
+            $caught = $exception;
+
+            return 'caught';
+        })
+        ->run(
+            static fn () => static fn () => 'closures cannot be serialized',
+            static fn () => 'second task',
+        );
+
+    expect($results)->toEqual(['caught', 'second task'])
+        ->and($caught->getMessage())->toContain("Serialization of 'Closure' is not allowed");
+});
