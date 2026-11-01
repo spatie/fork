@@ -109,7 +109,7 @@ class Fork
         $output = $task->output();
 
         if ($this->toExecuteAfterInParentTask) {
-            ($this->toExecuteAfterInParentTask)($output);
+            ($this->toExecuteAfterInParentTask)($output, $task->order());
         }
 
         unset($this->runningTasks[$task->order()]);
@@ -185,7 +185,7 @@ class Fork
         $connectionToParent->write($output);
 
         if ($this->toExecuteAfterInChildTask) {
-            ($this->toExecuteAfterInChildTask)($output);
+            ($this->toExecuteAfterInChildTask)($output, $task->order());
         }
 
         $connectionToParent->close();

@@ -205,6 +205,19 @@ $results = Fork::new()
     );
 ```
 
+Tasks can finish in any order, so the `after` callbacks also receive the position of the task in the `run` call, starting at 0:
+
+```php
+Fork::new()
+    ->after(
+        parent: fn ($output, int $order) => echo "Task {$order} returned {$output}",
+    )
+    ->run(
+        fn () => 'first',
+        fn () => 'second',
+    );
+```
+
 Finally, return values from child tasks are serialized using PHP's built-in `serialize` method. This means that you can return anything you can normally serialize in PHP, including objects:
 
 ```php

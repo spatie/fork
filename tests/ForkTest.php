@@ -170,6 +170,25 @@ test('output in after', function () {
         );
 });
 
+test('the callable given to after in the parent process receives the order of the task that finished', function () {
+    $outputByOrder = [];
+
+    Fork::new()
+        ->after(parent: function ($output, int $order) use (&$outputByOrder) {
+            $outputByOrder[$order] = $output;
+        })
+        ->run(
+            static function () {
+                usleep(200_000);
+
+                return 'first task';
+            },
+            static fn () => 'second task',
+        );
+
+    expect($outputByOrder)->toBe([1 => 'second task', 0 => 'first task']);
+});
+
 test('allow 2nd process to be done before the 1st', function () {
     expect(
         Fork::new()->run(
