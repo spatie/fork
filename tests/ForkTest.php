@@ -197,6 +197,31 @@ test('it throws exception in case of unexpected exit status', function () {
     )->toThrow(CouldNotManageTask::class);
 });
 
+test('a task that is stopped and continued is not treated as failed', function () {
+    if (posix_getpgrp() !== getmypid()) {
+        expect(posix_setpgid(0, 0))->toBeTrue();
+    }
+
+    expect(posix_getpgrp())->toBe(getmypid());
+
+    expect(
+        Fork::new()->run(
+            static function () {
+                posix_kill(getmypid(), SIGSTOP);
+
+                return 'continued';
+            },
+            static function () {
+                usleep(300_000);
+
+                posix_kill(0, SIGCONT);
+
+                return 'other task';
+            },
+        )
+    )->toEqual(['continued', 'other task']);
+});
+
 test('fork failures stop launching tasks and preserve exception and cleanup behavior', function (int $failAt, bool $warningException, bool $withoutPosix) {
     $process = proc_open(
         [PHP_BINARY, __DIR__.'/fixtures/forkFailure.php', $failAt, (int) $warningException, (int) $withoutPosix],
