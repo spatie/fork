@@ -2,6 +2,19 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.2.12 - 2026-11-04
+
+### Fixed
+
+- Restore the application's previous `SIGINT`, `SIGTERM` and `SIGQUIT` handlers when `run()` returns or throws an exception (#100).
+
+### Compatibility
+
+- Signal dispatch, termination, child handling and cleanup policies during `run()` are unchanged. Signals are not forwarded to application handlers while tasks are running.
+- PHP 8.3+ support, optional POSIX support and asynchronous signal dispatch behavior are unchanged. No API or dependency was added.
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.2.11...1.2.12
+
 ## 1.2.11 - 2026-11-04
 
 ### Fixed
