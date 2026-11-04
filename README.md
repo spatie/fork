@@ -233,13 +233,9 @@ In this case, the first two functions will be run immediately and as soon as one
 
 ### Signals
 
-While `run` is running, a `SIGINT`, `SIGTERM` or `SIGQUIT` (for example pressing Ctrl+C, or a process manager stopping your process) kills the running child tasks, and the tasks that haven't started yet won't be started. The signal is then handed on to whatever handled it before `run` was called:
+`run()` temporarily replaces the application's `SIGINT`, `SIGTERM` and `SIGQUIT` handlers. The previous handlers (including `SIG_DFL` and `SIG_IGN`) are restored when `run()` returns or throws an exception.
 
-- If you didn't install a handler, the process ends, as it normally would for that signal.
-- If you installed one with `pcntl_signal` (a queue worker's graceful shutdown, for example), it is called, and `run` returns once the child tasks that were killed are cleaned up.
-- If the signal was being ignored, it stays ignored, and the tasks carry on.
-
-Your own signal handlers are restored when `run` returns.
+Signal handling during `run()` is unchanged: with the optional `posix` extension, these signals kill the running child tasks and the parent with `SIGKILL`; application handlers are not forwarded the signal. Without `posix`, the receiving process exits without terminating its children. As before, `run()` enables asynchronous signal dispatch and leaves it enabled afterwards.
 
 ## Testing
 

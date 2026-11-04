@@ -197,92 +197,77 @@ test('it throws exception in case of unexpected exit status', function () {
     )->toThrow(CouldNotManageTask::class);
 });
 
-test('the signal handlers installed before run are restored afterwards', function () {
-    $handler = fn () => null;
-    pcntl_signal(SIGTERM, $handler);
+test('run restores application handlers without changing signal handling during tasks', function (string $scenario, string $disposition, int $signal) {
+    $process = proc_open(
+        [PHP_BINARY, __DIR__.'/fixtures/signals.php', $scenario, $disposition, $signal],
+        [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $pipes,
+    );
+
+    stream_set_blocking($pipes[1], false);
+    stream_set_blocking($pipes[2], false);
+    $output = '';
+    $errors = '';
+    $deadline = microtime(true) + 5;
+    $group = null;
 
     try {
-        Fork::new()->run(fn () => 1);
+        do {
+            $output .= stream_get_contents($pipes[1]);
+            $errors .= stream_get_contents($pipes[2]);
+            $status = proc_get_status($process);
 
-        expect(pcntl_signal_get_handler(SIGTERM))->toBe($handler);
+            if (str_contains($output, "\n")) {
+                $group = (int) strstr($output, "\n", true);
+            }
+
+            if (! $status['running']) {
+                break;
+            }
+
+            usleep(1_000);
+        } while (microtime(true) < $deadline);
+
+        expect($status['running'])->toBeFalse('Signal scenario exceeded its external deadline');
+        $output .= stream_get_contents($pipes[1]);
+        $errors .= stream_get_contents($pipes[2]);
+
+        expect($errors)->toBe('');
+        expect($group)->toBe($status['pid']);
+
+        $events = array_slice(explode("\n", trim($output)), 1);
+
+        if (in_array($scenario, ['active-signal', 'startup-signal'])) {
+            expect($status['signaled'])->toBeTrue()
+                ->and($status['termsig'])->toBe(SIGKILL)
+                ->and($events)->toBe($scenario === 'active-signal' ? ['started'] : []);
+
+            return;
+        }
+
+        expect($status['exitcode'])->toBe(0);
+
+        $report = json_decode(array_pop($events), true, flags: JSON_THROW_ON_ERROR);
+
+        expect($report['restored'])->toBe([true, true, true])
+            ->and($report['received'])->toBe($disposition === 'custom' ? [$signal] : [])
+            ->and($report['exception'])->toBe(match ($scenario) {
+                'before-failure', 'after-failure' => 'original',
+                'child-failure' => CouldNotManageTask::class,
+                default => null,
+            })
+            ->and($report['results'])->toBe($scenario === 'normal' ? [11, 29] : null)
+            ->and(in_array('queued', $events))->toBe($scenario === 'normal');
     } finally {
-        pcntl_signal(SIGTERM, SIG_DFL);
+        if ($group === proc_get_status($process)['pid']) {
+            posix_kill(-$group, SIGKILL);
+        }
+
+        proc_terminate($process, SIGKILL);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($process);
     }
-});
-
-test('a signal received while running is handed on to the handler installed before run', function () {
-    $receivedSignals = [];
-    pcntl_signal(SIGTERM, function (int $signal) use (&$receivedSignals) {
-        $receivedSignals[] = $signal;
-    });
-
-    try {
-        $results = Fork::new()
-            ->concurrent(2)
-            ->run(
-                static function () {
-                    usleep(200_000);
-                    posix_kill(posix_getppid(), SIGTERM);
-                    sleep(10);
-                },
-                static fn () => sleep(10),
-                static fn () => 'never started',
-            );
-
-        expect($receivedSignals)->toBe([SIGTERM])
-            ->and($results)->not->toHaveKey(2);
-
-        assertTookLessThanSeconds(5);
-    } finally {
-        pcntl_signal(SIGTERM, SIG_DFL);
-    }
-});
-
-test('a signal that was ignored before run stays ignored', function () {
-    pcntl_signal(SIGTERM, SIG_IGN);
-
-    try {
-        $results = Fork::new()->run(
-            static function () {
-                posix_kill(posix_getppid(), SIGTERM);
-
-                return 'first task';
-            },
-            static function () {
-                usleep(200_000);
-
-                return 'second task';
-            },
-        );
-
-        expect($results)->toEqual(['first task', 'second task'])
-            ->and(pcntl_signal_get_handler(SIGTERM))->toBe(SIG_IGN);
-    } finally {
-        pcntl_signal(SIGTERM, SIG_DFL);
-    }
-});
-
-test('a signal received while running still ends the process when no handler was installed before run', function () {
-    $script = sprintf(<<<'PHP'
-        require %s;
-
-        Spatie\Fork\Fork::new()->run(
-            static function () {
-                usleep(200_000);
-                posix_kill(posix_getppid(), SIGTERM);
-                sleep(10);
-            },
-            static fn () => sleep(10),
-        );
-
-        echo 'run() returned';
-        PHP, var_export(__DIR__.'/../vendor/autoload.php', true));
-
-    // Child tasks still running would keep the output pipe open, so this would take 10 seconds
-    exec(PHP_BINARY.' -r '.escapeshellarg($script).' 2>&1', $output, $exitCode);
-
-    expect($exitCode)->toBe(128 + SIGTERM)
-        ->and($output)->not->toContain('run() returned');
-
-    assertTookLessThanSeconds(5);
-});
+})->with(['normal', 'before-failure', 'after-failure', 'child-failure', 'active-signal', 'startup-signal'])
+    ->with(['default', 'ignored', 'custom'])
+    ->with([SIGTERM, SIGINT, SIGQUIT]);
