@@ -71,6 +71,11 @@ class Task
         return $this;
     }
 
+    public function closeConnection(): void
+    {
+        $this->connection->close();
+    }
+
     public function startTime(): int
     {
         return $this->startTime;
