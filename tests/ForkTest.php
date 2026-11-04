@@ -197,6 +197,32 @@ test('it throws exception in case of unexpected exit status', function () {
     )->toThrow(CouldNotManageTask::class);
 });
 
+test('incomplete transfers fail instead of returning truncated results', function (bool $serialized, bool $withoutPosix) {
+    $report = runTransferScenario('timeout', $serialized, $withoutPosix);
+
+    expect($report['exception'])->toBe(CouldNotManageTask::class)
+        ->and($report['callbacks'])->toBe(['first task'])
+        ->and($report['childSuccess'])->toBeFalse();
+})->with([false, true])->with([false, true]);
+
+test('large transfers succeed when the busy parent resumes within the wait limit', function (bool $serialized, bool $withoutPosix) {
+    $report = runTransferScenario('success', $serialized, $withoutPosix);
+
+    expect($report['exception'])->toBeNull()
+        ->and($report['exact'])->toBeTrue()
+        ->and($report['callbacks'])->toBe(['first task', 'large result'])
+        ->and($report['childSuccess'])->toBeTrue();
+})->with([false, true])->with([false, true]);
+
+test('an abandoned fork writer fails even while a sibling retains its peer socket', function () {
+    $report = runTransferScenario('abandonedFork');
+
+    expect($report['parentException'])->toBe('Parent stopped reading')
+        ->and($report['writerFailed'])->toBeTrue()
+        ->and($report['holderRunning'])->toBeTrue()
+        ->and($report['childSuccess'])->toBeFalse();
+});
+
 test('a task that is stopped and continued is not treated as failed', function () {
     if (posix_getpgrp() !== getmypid()) {
         expect(posix_setpgid(0, 0))->toBeTrue();
