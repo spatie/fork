@@ -2,6 +2,16 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.2.10 - 2026-11-04
+
+### What’s Changed
+
+* Fix stopped child tasks being treated as finished: a child stopped with `SIGSTOP` and later resumed with `SIGCONT` is now awaited until it actually terminates, preserving its output. Thanks @specialtactics for the contribution in https://github.com/spatie/fork/pull/97.
+* Preserve existing fail-fast handling of nonzero child exits. The original default-draining proposal was intentionally withdrawn: queued work is not started after a failure, and no new draining API or cleanup/cancellation policy is introduced.
+* Add an isolated public stopped/continued-child regression. Existing fork-creation cleanup, optional-POSIX support, subclass compatibility and PHP requirements remain unchanged.
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.2.9...1.2.10
+
 ## 1.2.9 - 2026-11-04
 
 ### What's Changed
