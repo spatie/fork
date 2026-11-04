@@ -231,6 +231,12 @@ $results = Fork::new()
 
 In this case, the first two functions will be run immediately and as soon as one of them finishes, the last one will start as well.
 
+### When a child process cannot be created
+
+If the system cannot create a child process (for example, because a process limit is reached), `run()` throws `Spatie\Fork\Exceptions\CouldNotManageTask` instead of waiting for an invalid process id. If your error handler throws an exception for the fork warning, that original exception is rethrown instead.
+
+No further queued tasks are started. With the optional `posix` extension, already-started tasks are killed and reaped before the exception is thrown. Without `posix`, `run()` still fails immediately, but cannot terminate or reap those tasks; they may continue running, and the caller is responsible for managing them. Parent-side task connections are closed in either case. Cleanup does not undo side effects of tasks that already ran.
+
 ## Testing
 
 ```bash
