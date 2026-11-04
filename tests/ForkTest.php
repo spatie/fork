@@ -241,6 +241,12 @@ test('queued tasks still run when a task exits with an unexpected status', funct
 });
 
 test('a task that is stopped and continued is not treated as failed', function () {
+    if (posix_getpgrp() !== getmypid()) {
+        expect(posix_setpgid(0, 0))->toBeTrue();
+    }
+
+    expect(posix_getpgrp())->toBe(getmypid());
+
     expect(
         Fork::new()->run(
             static function () {
@@ -251,7 +257,6 @@ test('a task that is stopped and continued is not treated as failed', function (
             static function () {
                 usleep(300_000);
 
-                // Continue the stopped sibling (SIGCONT to our process group is harmless to everything else in it)
                 posix_kill(0, SIGCONT);
 
                 return 'other task';

@@ -233,7 +233,7 @@ In this case, the first two functions will be run immediately and as soon as one
 
 ### Tasks that exit unexpectedly
 
-If a child task exits with a non-zero status (for example because it called `exit(1)`, or hit a fatal error), `run` throws a `Spatie\Fork\Exceptions\CouldNotManageTask` exception. The other tasks, including any still waiting for a free slot, are run to completion first, so their output still reaches your `after` callbacks:
+If a child task exits with a non-zero status (for example because it called `exit(1)`), `run` throws a `Spatie\Fork\Exceptions\CouldNotManageTask` exception. The other tasks, including any still waiting for a free slot, are run to completion first, so their output still reaches your `after` callbacks:
 
 ```php
 use Spatie\Fork\Exceptions\CouldNotManageTask;
@@ -241,7 +241,7 @@ use Spatie\Fork\Fork;
 
 try {
     Fork::new()
-        ->after(parent: fn ($output) => echo $output) // 'second task'
+        ->after(parent: fn ($output) => print $output) // 'second task'
         ->run(
             fn () => exit(1),
             fn () => 'second task',
