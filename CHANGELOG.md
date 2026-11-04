@@ -2,6 +2,19 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.2.11 - 2026-11-04
+
+### Fixed
+
+- Report incomplete child-result transfers with the existing `CouldNotManageTask` exception instead of returning truncated strings or invalid serialized data (#102).
+- Preserve the five-second no-progress write limit across interrupted waits. Successful writes reset the limit, so progressing transfers may take longer overall.
+
+### Compatibility
+
+- Successful results, PHP 8.3+ support, and optional POSIX support are unchanged. Transfers that previously appeared successful with incomplete output now fail explicitly; no timeout API or dependency was added.
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.2.10...1.2.11
+
 ## 1.2.10 - 2026-11-04
 
 ### What’s Changed
