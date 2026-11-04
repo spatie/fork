@@ -75,22 +75,34 @@ class Fork
     {
         $output = [];
 
-        $this->listenForSignals();
-        $this->startRunning(...$queue);
+        $previousSignalHandlers = [];
 
-        while ($this->isRunning()) {
-            foreach ($this->runningTasks as $task) {
-                if (! $task->isFinished()) {
-                    continue;
+        foreach ([SIGQUIT, SIGTERM, SIGINT] as $signal) {
+            $previousSignalHandlers[$signal] = pcntl_signal_get_handler($signal);
+        }
+
+        try {
+            $this->listenForSignals();
+            $this->startRunning(...$queue);
+
+            while ($this->isRunning()) {
+                foreach ($this->runningTasks as $task) {
+                    if (! $task->isFinished()) {
+                        continue;
+                    }
+
+                    $output[$task->order()] = $this->finishTask($task);
+
+                    $this->shiftTaskFromQueue();
                 }
 
-                $output[$task->order()] = $this->finishTask($task);
-
-                $this->shiftTaskFromQueue();
+                if ($this->isRunning()) {
+                    usleep(1_000);
+                }
             }
-
-            if ($this->isRunning()) {
-                usleep(1_000);
+        } finally {
+            foreach ($previousSignalHandlers as $signal => $handler) {
+                pcntl_signal($signal, $handler);
             }
         }
 

@@ -291,3 +291,78 @@ test('subclasses can use their own fork method', function () {
 
     expect($fork->run(fn () => 19))->toBe([19]);
 });
+
+test('run restores application handlers without changing signal handling during tasks', function (string $scenario, string $disposition, int $signal) {
+    $process = proc_open(
+        [PHP_BINARY, __DIR__.'/fixtures/signals.php', $scenario, $disposition, $signal],
+        [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $pipes,
+    );
+
+    stream_set_blocking($pipes[1], false);
+    stream_set_blocking($pipes[2], false);
+    $output = '';
+    $errors = '';
+    $deadline = microtime(true) + 5;
+    $group = null;
+
+    try {
+        do {
+            $output .= stream_get_contents($pipes[1]);
+            $errors .= stream_get_contents($pipes[2]);
+            $status = proc_get_status($process);
+
+            if (str_contains($output, "\n")) {
+                $group = (int) strstr($output, "\n", true);
+            }
+
+            if (! $status['running']) {
+                break;
+            }
+
+            usleep(1_000);
+        } while (microtime(true) < $deadline);
+
+        expect($status['running'])->toBeFalse('Signal scenario exceeded its external deadline');
+        $output .= stream_get_contents($pipes[1]);
+        $errors .= stream_get_contents($pipes[2]);
+
+        expect($errors)->toBe('');
+        expect($group)->toBe($status['pid']);
+
+        $events = array_slice(explode("\n", trim($output)), 1);
+
+        if (in_array($scenario, ['active-signal', 'startup-signal'])) {
+            expect($status['signaled'])->toBeTrue()
+                ->and($status['termsig'])->toBe(SIGKILL)
+                ->and($events)->toBe($scenario === 'active-signal' ? ['started'] : []);
+
+            return;
+        }
+
+        expect($status['exitcode'])->toBe(0);
+
+        $report = json_decode(array_pop($events), true, flags: JSON_THROW_ON_ERROR);
+
+        expect($report['restored'])->toBe([true, true, true])
+            ->and($report['received'])->toBe($disposition === 'custom' ? [$signal] : [])
+            ->and($report['exception'])->toBe(match ($scenario) {
+                'before-failure', 'after-failure' => 'original',
+                'child-failure' => CouldNotManageTask::class,
+                default => null,
+            })
+            ->and($report['results'])->toBe($scenario === 'normal' ? [11, 29] : null)
+            ->and(in_array('queued', $events))->toBe($scenario === 'normal');
+    } finally {
+        if ($group === proc_get_status($process)['pid']) {
+            posix_kill(-$group, SIGKILL);
+        }
+
+        proc_terminate($process, SIGKILL);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($process);
+    }
+})->with(['normal', 'before-failure', 'after-failure', 'child-failure', 'active-signal', 'startup-signal'])
+    ->with(['default', 'ignored', 'custom'])
+    ->with([SIGTERM, SIGINT, SIGQUIT]);

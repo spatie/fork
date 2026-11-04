@@ -239,6 +239,12 @@ If the system cannot create a child process (for example, because a process limi
 
 No further queued tasks are started. With the optional `posix` extension, already-started tasks are killed and reaped before the exception is thrown. Without `posix`, `run()` still fails immediately, but cannot terminate or reap those tasks; they may continue running, and the caller is responsible for managing them. Parent-side task connections are closed in either case. Cleanup does not undo side effects of tasks that already ran.
 
+### Signals
+
+`run()` temporarily replaces the application's `SIGINT`, `SIGTERM` and `SIGQUIT` handlers. The previous handlers (including `SIG_DFL` and `SIG_IGN`) are restored when `run()` returns or throws an exception.
+
+Signal handling during `run()` is unchanged: with the optional `posix` extension, these signals kill the running child tasks and the parent with `SIGKILL`; application handlers are not forwarded the signal. Without `posix`, the receiving process exits without terminating its children. As before, `run()` enables asynchronous signal dispatch and leaves it enabled afterwards.
+
 ## Testing
 
 ```bash
