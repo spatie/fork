@@ -214,7 +214,12 @@ class Fork
 
         $output = $task->execute();
 
-        $connectionToParent->write($output);
+        try {
+            $connectionToParent->write($output);
+        } catch (Throwable) {
+            // Exit directly so the SIGKILL in forkForTask() cannot mask a failed transfer.
+            exit(1);
+        }
 
         if ($this->toExecuteAfterInChildTask) {
             ($this->toExecuteAfterInChildTask)($output);

@@ -205,6 +205,8 @@ $results = Fork::new()
     );
 ```
 
+Keep parent callbacks short: while they run, the parent cannot read other children's results. If a child cannot make progress sending its result for five seconds, `run()` throws `Spatie\Fork\Exceptions\CouldNotManageTask` instead of returning incomplete data. Successful writes reset this wait limit, so a transfer that keeps making progress can take longer than five seconds overall.
+
 Finally, return values from child tasks are serialized using PHP's built-in `serialize` method. This means that you can return anything you can normally serialize in PHP, including objects:
 
 ```php
