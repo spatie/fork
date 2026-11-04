@@ -197,49 +197,6 @@ test('it throws exception in case of unexpected exit status', function () {
     )->toThrow(CouldNotManageTask::class);
 });
 
-test('the other tasks still finish when one exits with an unexpected status', function () {
-    $finished = [];
-
-    expect(function () use (&$finished) {
-        Fork::new()
-            ->after(parent: function ($output) use (&$finished) {
-                $finished[] = $output;
-            })
-            ->run(
-                static function () {
-                    exit(1);
-                },
-                static function () {
-                    usleep(200_000);
-
-                    return 'running task';
-                },
-            );
-    })->toThrow(CouldNotManageTask::class);
-
-    expect($finished)->toBe(['running task']);
-});
-
-test('queued tasks still run when a task exits with an unexpected status', function () {
-    $finished = [];
-
-    expect(function () use (&$finished) {
-        Fork::new()
-            ->concurrent(1)
-            ->after(parent: function ($output) use (&$finished) {
-                $finished[] = $output;
-            })
-            ->run(
-                static function () {
-                    exit(1);
-                },
-                static fn () => 'queued task',
-            );
-    })->toThrow(CouldNotManageTask::class);
-
-    expect($finished)->toBe(['queued task']);
-});
-
 test('a task that is stopped and continued is not treated as failed', function () {
     if (posix_getpgrp() !== getmypid()) {
         expect(posix_setpgid(0, 0))->toBeTrue();

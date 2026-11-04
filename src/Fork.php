@@ -75,25 +75,12 @@ class Fork
     {
         $output = [];
 
-        $failure = null;
-
         $this->listenForSignals();
         $this->startRunning(...$queue);
 
         while ($this->isRunning()) {
             foreach ($this->runningTasks as $task) {
-                try {
-                    if (! $task->isFinished()) {
-                        continue;
-                    }
-                } catch (CouldNotManageTask $exception) {
-                    // Let the other tasks finish before throwing, so their output isn't lost
-                    $failure ??= $exception;
-
-                    unset($this->runningTasks[$task->order()]);
-
-                    $this->shiftTaskFromQueue();
-
+                if (! $task->isFinished()) {
                     continue;
                 }
 
@@ -105,10 +92,6 @@ class Fork
             if ($this->isRunning()) {
                 usleep(1_000);
             }
-        }
-
-        if ($failure) {
-            throw $failure;
         }
 
         return $output;
