@@ -2,6 +2,17 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.2.9 - 2026-11-04
+
+### What's Changed
+
+* Fail immediately when a child process cannot be forked instead of storing `-1` as a task PID and potentially waiting for another child in https://github.com/spatie/fork/pull/101.
+* Close parent-side task connections and discard queued work after a failed launch. With optional POSIX support, terminate and reap already-started tasks. Preserve exceptions thrown by application warning handlers.
+* Add isolated public-behavior regressions for process limits, cleanup, queued work, unrelated children, and reuse. Runtime requirements remain unchanged; without POSIX, already-started children may continue running and remain the caller's responsibility.
+* Document an example of task timeouts using `before` / `after` callbacks in https://github.com/spatie/fork/pull/95, and retain Spatie-hosted README images.
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.2.8...1.2.9
+
 ## 1.2.8 - 2026-09-14
 
 ### What's Changed
