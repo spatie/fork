@@ -264,3 +264,47 @@ test('a task that is stopped and continued is not treated as failed', function (
         )
     )->toEqual(['continued', 'other task']);
 });
+
+test('fork failures stop launching tasks and preserve exception and cleanup behavior', function (int $failAt, bool $warningException, bool $withoutPosix) {
+    $process = proc_open(
+        [PHP_BINARY, __DIR__.'/fixtures/forkFailure.php', $failAt, (int) $warningException, (int) $withoutPosix],
+        [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $pipes,
+    );
+
+    $output = stream_get_contents($pipes[1]);
+    $errors = stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+
+    expect(proc_close($process))->toBe(0, $errors);
+
+    $report = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
+    $children = match ($failAt) {
+        1 => [],
+        2 => [1 => $withoutPosix ? 0 : -1],
+        3 => [1 => -1, 2 => $withoutPosix ? 0 : -1],
+    };
+
+    expect($report['exception'])->toBe($warningException ? ErrorException::class : CouldNotManageTask::class)
+        ->and($report['message'])->toContain($warningException ? 'fork warning converted to exception' : pcntl_strerror(PCNTL_EAGAIN))
+        ->and($report['originalException'])->toBe($warningException)
+        ->and($report['attempts'])->toBe($failAt)
+        ->and($report['children'])->toBe($children)
+        ->and($report['unrelatedChild'])->toBe(0)
+        ->and($report['socketDifference'])->toBe(0)
+        ->and($report['failFast'])->toBeTrue()
+        ->and($report['reuse'])->toBe([73]);
+})->with([1, 2, 3])->with([false, true])->with([false, true]);
+
+test('subclasses can use their own fork method', function () {
+    $fork = new class extends Fork
+    {
+        private function fork(string $value): string
+        {
+            return $value;
+        }
+    };
+
+    expect($fork->run(fn () => 19))->toBe([19]);
+});
