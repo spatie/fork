@@ -27,7 +27,7 @@
     "require-dev": {
         "laravel/pint": "^1.0",
         "nesbot/carbon": "^2.66|^3.0",
-        "pestphp/pest": "^4.0",
+        "pestphp/pest": "^4.0|^5.0",
         "spatie/ray": "^1.10"
     },
     "autoload": {
