@@ -77,6 +77,11 @@ class Task
         return $this;
     }
 
+    public function closeConnection(): void
+    {
+        $this->connection->close();
+    }
+
     public function startTime(): int
     {
         return $this->startTime;
@@ -183,7 +188,7 @@ class Task
     {
         $this->output .= $this->connection->read()->current();
 
-        if (pcntl_waitpid($this->pid(), $status, WNOHANG | WUNTRACED) === $this->pid) {
+        if (pcntl_waitpid($this->pid(), $status, WNOHANG) === $this->pid) {
 
             if (pcntl_wexitstatus($status) !== 0) {
                 throw CouldNotManageTask::make($this);
