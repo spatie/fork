@@ -4,6 +4,8 @@ namespace Spatie\Fork;
 
 use Closure;
 use Exception;
+use Spatie\Fork\Exceptions\CouldNotManageTask;
+use Throwable;
 
 class Fork
 {
@@ -73,22 +75,34 @@ class Fork
     {
         $output = [];
 
-        $this->listenForSignals();
-        $this->startRunning(...$queue);
+        $previousSignalHandlers = [];
 
-        while ($this->isRunning()) {
-            foreach ($this->runningTasks as $task) {
-                if (! $task->isFinished()) {
-                    continue;
+        foreach ([SIGQUIT, SIGTERM, SIGINT] as $signal) {
+            $previousSignalHandlers[$signal] = pcntl_signal_get_handler($signal);
+        }
+
+        try {
+            $this->listenForSignals();
+            $this->startRunning(...$queue);
+
+            while ($this->isRunning()) {
+                foreach ($this->runningTasks as $task) {
+                    if (! $task->isFinished()) {
+                        continue;
+                    }
+
+                    $output[$task->order()] = $this->finishTask($task);
+
+                    $this->shiftTaskFromQueue();
                 }
 
-                $output[$task->order()] = $this->finishTask($task);
-
-                $this->shiftTaskFromQueue();
+                if ($this->isRunning()) {
+                    usleep(1_000);
+                }
             }
-
-            if ($this->isRunning()) {
-                usleep(1_000);
+        } finally {
+            foreach ($previousSignalHandlers as $signal => $handler) {
+                pcntl_signal($signal, $handler);
             }
         }
 
@@ -121,7 +135,37 @@ class Fork
     {
         [$socketToParent, $socketToChild] = Connection::createPair();
 
-        $processId = pcntl_fork();
+        try {
+            $processId = @pcntl_fork();
+
+            if ($processId === -1) {
+                throw CouldNotManageTask::forkFailed(pcntl_strerror(pcntl_get_last_error()));
+            }
+        } catch (Throwable $exception) {
+            $socketToParent->close();
+            $socketToChild->close();
+
+            if (extension_loaded('posix')) {
+                foreach ($this->runningTasks as $runningTask) {
+                    posix_kill($runningTask->pid(), SIGKILL);
+                }
+
+                foreach ($this->runningTasks as $runningTask) {
+                    do {
+                        $waitResult = pcntl_waitpid($runningTask->pid(), $status);
+                    } while ($waitResult === -1 && pcntl_get_last_error() === PCNTL_EINTR);
+                }
+            }
+
+            foreach ($this->runningTasks as $runningTask) {
+                $runningTask->closeConnection();
+            }
+
+            $this->runningTasks = [];
+            $this->queue = [];
+
+            throw $exception;
+        }
 
         if ($this->currentlyInChildTask($processId)) {
             $socketToChild->close();
@@ -182,7 +226,12 @@ class Fork
 
         $output = $task->execute();
 
-        $connectionToParent->write($output);
+        try {
+            $connectionToParent->write($output);
+        } catch (Throwable) {
+            // Exit directly so the SIGKILL in forkForTask() cannot mask a failed transfer.
+            exit(1);
+        }
 
         if ($this->toExecuteAfterInChildTask) {
             ($this->toExecuteAfterInChildTask)($output, $task->order());

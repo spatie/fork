@@ -215,3 +215,173 @@ test('it throws exception in case of unexpected exit status', function () {
         )
     )->toThrow(CouldNotManageTask::class);
 });
+
+test('incomplete transfers fail instead of returning truncated results', function (bool $serialized, bool $withoutPosix) {
+    $report = runTransferScenario('timeout', $serialized, $withoutPosix);
+
+    expect($report['exception'])->toBe(CouldNotManageTask::class)
+        ->and($report['callbacks'])->toBe(['first task'])
+        ->and($report['childSuccess'])->toBeFalse();
+})->with([false, true])->with([false, true]);
+
+test('large transfers succeed when the busy parent resumes within the wait limit', function (bool $serialized, bool $withoutPosix) {
+    $report = runTransferScenario('success', $serialized, $withoutPosix);
+
+    expect($report['exception'])->toBeNull()
+        ->and($report['exact'])->toBeTrue()
+        ->and($report['callbacks'])->toBe(['first task', 'large result'])
+        ->and($report['childSuccess'])->toBeTrue();
+})->with([false, true])->with([false, true]);
+
+test('an abandoned fork writer fails even while a sibling retains its peer socket', function () {
+    $report = runTransferScenario('abandonedFork');
+
+    expect($report['parentException'])->toBe('Parent stopped reading')
+        ->and($report['writerFailed'])->toBeTrue()
+        ->and($report['holderRunning'])->toBeTrue()
+        ->and($report['childSuccess'])->toBeFalse();
+});
+
+test('a task that is stopped and continued is not treated as failed', function () {
+    if (posix_getpgrp() !== getmypid()) {
+        expect(posix_setpgid(0, 0))->toBeTrue();
+    }
+
+    expect(posix_getpgrp())->toBe(getmypid());
+
+    expect(
+        Fork::new()->run(
+            static function () {
+                posix_kill(getmypid(), SIGSTOP);
+
+                return 'continued';
+            },
+            static function () {
+                usleep(300_000);
+
+                posix_kill(0, SIGCONT);
+
+                return 'other task';
+            },
+        )
+    )->toEqual(['continued', 'other task']);
+});
+
+test('fork failures stop launching tasks and preserve exception and cleanup behavior', function (int $failAt, bool $warningException, bool $withoutPosix) {
+    $process = proc_open(
+        [PHP_BINARY, __DIR__.'/fixtures/forkFailure.php', $failAt, (int) $warningException, (int) $withoutPosix],
+        [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $pipes,
+    );
+
+    $output = stream_get_contents($pipes[1]);
+    $errors = stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+
+    expect(proc_close($process))->toBe(0, $errors);
+
+    $report = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
+    $children = match ($failAt) {
+        1 => [],
+        2 => [1 => $withoutPosix ? 0 : -1],
+        3 => [1 => -1, 2 => $withoutPosix ? 0 : -1],
+    };
+
+    expect($report['exception'])->toBe($warningException ? ErrorException::class : CouldNotManageTask::class)
+        ->and($report['message'])->toContain($warningException ? 'fork warning converted to exception' : pcntl_strerror(PCNTL_EAGAIN))
+        ->and($report['originalException'])->toBe($warningException)
+        ->and($report['attempts'])->toBe($failAt)
+        ->and($report['children'])->toBe($children)
+        ->and($report['unrelatedChild'])->toBe(0)
+        ->and($report['socketDifference'])->toBe(0)
+        ->and($report['failFast'])->toBeTrue()
+        ->and($report['reuse'])->toBe([73]);
+})->with([1, 2, 3])->with([false, true])->with([false, true]);
+
+test('subclasses can use their own fork method', function () {
+    $fork = new class extends Fork
+    {
+        private function fork(string $value): string
+        {
+            return $value;
+        }
+    };
+
+    expect($fork->run(fn () => 19))->toBe([19]);
+});
+
+test('run restores application handlers without changing signal handling during tasks', function (string $scenario, string $disposition, int $signal) {
+    $process = proc_open(
+        [PHP_BINARY, __DIR__.'/fixtures/signals.php', $scenario, $disposition, $signal],
+        [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $pipes,
+    );
+
+    stream_set_blocking($pipes[1], false);
+    stream_set_blocking($pipes[2], false);
+    $output = '';
+    $errors = '';
+    $deadline = microtime(true) + 5;
+    $group = null;
+
+    try {
+        do {
+            $output .= stream_get_contents($pipes[1]);
+            $errors .= stream_get_contents($pipes[2]);
+            $status = proc_get_status($process);
+
+            if (str_contains($output, "\n")) {
+                $group = (int) strstr($output, "\n", true);
+            }
+
+            if (! $status['running']) {
+                break;
+            }
+
+            usleep(1_000);
+        } while (microtime(true) < $deadline);
+
+        expect($status['running'])->toBeFalse('Signal scenario exceeded its external deadline');
+        $output .= stream_get_contents($pipes[1]);
+        $errors .= stream_get_contents($pipes[2]);
+
+        expect($errors)->toBe('');
+        expect($group)->toBe($status['pid']);
+
+        $events = array_slice(explode("\n", trim($output)), 1);
+
+        if (in_array($scenario, ['active-signal', 'startup-signal'])) {
+            expect($status['signaled'])->toBeTrue()
+                ->and($status['termsig'])->toBe(SIGKILL)
+                ->and($events)->toBe($scenario === 'active-signal' ? ['started'] : []);
+
+            return;
+        }
+
+        expect($status['exitcode'])->toBe(0);
+
+        $report = json_decode(array_pop($events), true, flags: JSON_THROW_ON_ERROR);
+
+        expect($report['restored'])->toBe([true, true, true])
+            ->and($report['received'])->toBe($disposition === 'custom' ? [$signal] : [])
+            ->and($report['exception'])->toBe(match ($scenario) {
+                'before-failure', 'after-failure' => 'original',
+                'child-failure' => CouldNotManageTask::class,
+                default => null,
+            })
+            ->and($report['results'])->toBe($scenario === 'normal' ? [11, 29] : null)
+            ->and(in_array('queued', $events))->toBe($scenario === 'normal');
+    } finally {
+        if ($group === proc_get_status($process)['pid']) {
+            posix_kill(-$group, SIGKILL);
+        }
+
+        proc_terminate($process, SIGKILL);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($process);
+    }
+})->with(['normal', 'before-failure', 'after-failure', 'child-failure', 'active-signal', 'startup-signal'])
+    ->with(['default', 'ignored', 'custom'])
+    ->with([SIGTERM, SIGINT, SIGQUIT]);

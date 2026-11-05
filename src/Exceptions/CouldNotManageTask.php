@@ -11,4 +11,9 @@ class CouldNotManageTask extends Exception
     {
         return new self("Could not reliably manage task that uses process id {$task->pid()}");
     }
+
+    public static function forkFailed(string $reason): self
+    {
+        return new self("Could not fork a child process for the task: {$reason}");
+    }
 }
