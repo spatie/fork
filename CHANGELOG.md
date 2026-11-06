@@ -2,6 +2,26 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.3.0 - 2026-11-06
+
+### Added
+
+- Opt-in `Fork::catch(callable $callback)` to handle task exceptions in the parent process. The callback receives the exception and zero-based task order; its return value becomes the task result and reaches `after(parent: ...)` (#99).
+- Handle failures while serializing task return values through the same callback. Serializable exceptions retain their original type and data. Exceptions that cannot be serialized or restored fall back to `Spatie\Fork\Exceptions\TaskFailed`, preserving their original class, message, file, line and trace text.
+- Keep successful data separate from transported exceptions, including strings resembling transport markers and returned exception objects. Exception restoration hooks run only in the parent.
+
+### Development
+
+- Test PHP 8.6 alongside PHP 8.3–8.5, and allow Pest 5 in development dependencies (#104).
+
+### Compatibility
+
+- PHP 8.3+ requirements and existing `before`/`after` callback signatures are unchanged. Without `catch()`, existing output and exception behavior is unchanged.
+- `catch()` handles task execution and return-value serialization, not before/after callbacks, parent-side result restoration, transfer failures or unexpected child exit statuses. Exceptions thrown by the catch callback propagate from `run()`.
+- Existing transfer deadlines, child status handling, signal-handler restoration, termination and sibling cleanup policies are unchanged.
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.2.12...1.3.0
+
 ## 1.2.12 - 2026-11-04
 
 ### Fixed
