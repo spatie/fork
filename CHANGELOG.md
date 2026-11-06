@@ -2,6 +2,21 @@
 
 All notable changes to `fork` will be documented in this file.
 
+## 1.4.0 - 2026-11-06
+
+### Added
+
+- Add `Fork::afterWithOrder(child: ..., parent: ...)` to receive each task's output and zero-based position in `run()`, matching result keys even when tasks finish out of order or are queued by a concurrency limit (#98).
+- Register task-order callbacks independently of existing `after()` callbacks. When both are registered, the existing callback runs first in each process. Re-registering `afterWithOrder()` replaces its callbacks; calling it without arguments clears them.
+- Parent task-order callbacks receive decoded results, including recovery values returned by `catch()`. Child callbacks receive the raw output sent to the parent, just like existing child `after()` callbacks.
+
+### Compatibility
+
+- Existing `after()` callbacks still receive exactly one argument. Internal functions, optional parameters and variadic callbacks retain their existing behavior; task order is explicitly opt-in.
+- PHP 8.3+ support and dependency requirements are unchanged. Existing exception transport, transfer deadlines, child exit-status handling, signal restoration, termination and sibling cleanup policies are unchanged.
+
+**Full Changelog**: https://github.com/spatie/fork/compare/1.3.0...1.4.0
+
 ## 1.3.0 - 2026-11-06
 
 ### Added
