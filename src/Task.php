@@ -11,8 +11,6 @@ class Task
 {
     protected const SERIALIZATION_TOKEN = '[[serialized::';
 
-    protected const EXCEPTION_TOKEN = '[[exception::';
-
     protected string $name;
 
     protected int $pid;
@@ -28,6 +26,8 @@ class Task
     protected Closure $callable;
 
     protected string $output = '';
+
+    protected bool $catchExceptions = false;
 
     protected ?Throwable $exception = null;
 
@@ -94,23 +94,33 @@ class Task
         return $this;
     }
 
-    public function execute(bool $catchExceptions = false): string
+    public function setCatchExceptions(bool $catchExceptions): self
+    {
+        $this->catchExceptions = $catchExceptions;
+
+        return $this;
+    }
+
+    public function execute(): string
     {
         try {
             $output = ($this->callable)();
+
+            if ($this->catchExceptions) {
+                return serialize(['output' => $output]);
+            }
 
             if (is_string($output)) {
                 return $output;
             }
 
-            // Serialized inside the try, so a return value that can't be serialized reaches catch() too
             return self::SERIALIZATION_TOKEN.serialize($output);
         } catch (Throwable $exception) {
-            if (! $catchExceptions) {
+            if (! $this->catchExceptions) {
                 throw $exception;
             }
 
-            return self::EXCEPTION_TOKEN.$this->serializeException($exception);
+            return $this->serializeException($exception);
         }
     }
 
@@ -126,12 +136,16 @@ class Task
 
         $output = $this->output;
 
-        if (str_starts_with($output, self::EXCEPTION_TOKEN)) {
-            $this->exception = $this->unserializeException(
-                substr($output, strlen(self::EXCEPTION_TOKEN))
-            );
+        if ($this->catchExceptions && $output !== '') {
+            $payload = unserialize($output);
 
-            return null;
+            if (array_key_exists('description', $payload)) {
+                $this->exception = $this->unserializeException($payload);
+
+                return null;
+            }
+
+            return $payload['output'];
         }
 
         if (str_starts_with($output, self::SERIALIZATION_TOKEN)) {
@@ -157,24 +171,31 @@ class Task
      */
     protected function serializeException(Throwable $exception): string
     {
-        try {
-            $serialized = serialize(['exception' => $exception]);
+        $description = TaskFailed::describe($exception);
 
-            if (unserialize($serialized) !== false) {
-                return $serialized;
-            }
+        try {
+            $serialized = serialize($exception);
         } catch (Throwable) {
-            // Fall through to the description
+            $serialized = null;
         }
 
-        return serialize(['description' => TaskFailed::describe($exception)]);
+        return serialize(['exception' => $serialized, 'description' => $description]);
     }
 
-    protected function unserializeException(string $serialized): Throwable
+    /**
+     * @param  array{exception: ?string, description: array{class: string, message: string, code: int, file: string, line: int, trace: string}}  $payload
+     */
+    protected function unserializeException(array $payload): Throwable
     {
-        $payload = unserialize($serialized);
+        if ($payload['exception'] !== null) {
+            try {
+                return unserialize($payload['exception']);
+            } catch (Throwable) {
+                // Custom restoration hooks may fail only in the parent process.
+            }
+        }
 
-        return $payload['exception'] ?? TaskFailed::fromDescription($payload['description']);
+        return TaskFailed::fromDescription($payload['description']);
     }
 
     public function onSuccess(callable $callback): self

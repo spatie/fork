@@ -79,7 +79,8 @@ class Fork
         $tasks = [];
 
         foreach ($callables as $order => $callable) {
-            $tasks[] = Task::fromCallable($callable, $order);
+            $tasks[] = Task::fromCallable($callable, $order)
+                ->setCatchExceptions($this->catchCallback !== null);
         }
 
         return $this->waitFor(...$tasks);
@@ -242,7 +243,7 @@ class Fork
             ($this->toExecuteBeforeInChildTask)();
         }
 
-        $output = $task->execute(catchExceptions: $this->catchCallback !== null);
+        $output = $task->execute();
 
         try {
             $connectionToParent->write($output);

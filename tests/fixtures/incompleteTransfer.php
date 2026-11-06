@@ -18,6 +18,7 @@ function extension_loaded(string $extension): bool
 
 [$script, $scenario, $serialized, $withoutPosix] = $argv;
 $withoutPosix = (bool) $withoutPosix;
+$catchExceptions = (bool) ($argv[4] ?? false);
 $directory = sys_get_temp_dir().'/fork-transfer-'.getmypid();
 mkdir($directory);
 $pids = [];
@@ -216,13 +217,13 @@ $exception = null;
 $results = null;
 
 try {
-    $results = Fork::new()
+    $fork = Fork::new()
         ->before(function () use ($directory): void {
             file_put_contents($directory.'/pids', getmypid().PHP_EOL, FILE_APPEND | LOCK_EX);
         })
         ->after(
-            child: function ($output) use ($directory): void {
-                if ($output !== 'first task') {
+            child: function ($output) use ($directory, $payload): void {
+                if (strlen($output) >= strlen($payload)) {
                     file_put_contents($directory.'/success', 'yes');
                 }
             },
@@ -237,16 +238,21 @@ try {
                 fread($parentGate, 1);
                 sleep($scenario === 'timeout' ? 6 : 1);
             },
-        )
-        ->run(
-            fn () => 'first task',
-            function () use ($childGate, $value) {
-                fread($childGate, 5);
-                fwrite($childGate, 'ready');
-
-                return $value;
-            },
         );
+
+    if ($catchExceptions) {
+        $fork->catch(fn () => throw new RuntimeException('Transfer failures must not reach catch'));
+    }
+
+    $results = $fork->run(
+        fn () => 'first task',
+        function () use ($childGate, $value) {
+            fread($childGate, 5);
+            fwrite($childGate, 'ready');
+
+            return $value;
+        },
+    );
 } catch (Throwable $caught) {
     $exception = $caught::class;
 }

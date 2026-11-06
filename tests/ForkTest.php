@@ -207,6 +207,28 @@ test('a task that throws returns an empty string when there is no catch callback
     )->toEqual(['', 'second task']);
 });
 
+test('exception transport never confuses successful values with failures', function (bool $catch) {
+    $values = [
+        '[[exception::ordinary text',
+        '[[exception::'.serialize(['exception' => new RuntimeException('not thrown')]),
+        new RuntimeException('returned exception', 17),
+        ['exception' => 'data', 'description' => null],
+        null,
+        false,
+        "binary\0data",
+    ];
+    $fork = Fork::new();
+
+    if ($catch) {
+        $values[] = '[[serialized::ordinary text';
+        $fork->catch(fn () => throw new RuntimeException('Successful data reached catch'));
+    }
+
+    $results = $fork->run(...array_map(fn ($value) => fn () => $value, $values));
+
+    expect($results)->toEqual($values);
+})->with([false, true]);
+
 test('the catch callback receives the exception and the order of the task that threw', function () {
     $results = Fork::new()
         ->catch(fn (Throwable $exception, int $order) => get_class($exception).": {$exception->getMessage()} in task {$order}")
@@ -284,22 +306,116 @@ test('the catch callback receives the exception when the output of a task cannot
         ->and($caught->getMessage())->toContain("Serialization of 'Closure' is not allowed");
 });
 
-test('incomplete transfers fail instead of returning truncated results', function (bool $serialized, bool $withoutPosix) {
-    $report = runTransferScenario('timeout', $serialized, $withoutPosix);
+test('catch transport preserves exception data and process boundaries', function (string $scenario, bool $withoutPosix) {
+    $command = ['setsid', PHP_BINARY];
+
+    if ($withoutPosix) {
+        array_push($command, '-n', '-d', 'extension=sockets');
+    }
+
+    array_push($command, __DIR__.'/fixtures/catchExceptions.php', $scenario);
+    $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+    $pid = proc_get_status($process)['pid'];
+    stream_set_blocking($pipes[1], false);
+    stream_set_blocking($pipes[2], false);
+    $output = '';
+    $errors = '';
+    $deadline = microtime(true) + 20;
+
+    try {
+        do {
+            $output .= stream_get_contents($pipes[1]);
+            $errors .= stream_get_contents($pipes[2]);
+            $status = proc_get_status($process);
+
+            if (! $status['running']) {
+                break;
+            }
+
+            usleep(1_000);
+        } while (microtime(true) < $deadline);
+
+        expect($status['running'])->toBeFalse('Catch scenario exceeded its external deadline');
+        $output .= stream_get_contents($pipes[1]);
+        $errors .= stream_get_contents($pipes[2]);
+        expect($status['exitcode'])->toBe(0, $errors)
+            ->and($errors)->toBe('');
+
+        $report = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
+
+        expect($report['posix'])->toBe(! $withoutPosix)
+            ->and($report['restored'])->toBe([true, true, true])
+            ->and($report['siblingFinished'])->toBeTrue();
+
+        if (in_array($scenario, ['callback-throw', 'exit'])) {
+            expect($report['thrown'])->toBe($scenario === 'exit' ? CouldNotManageTask::class : 'original callback exception')
+                ->and($report['queuedFinished'])->toBeFalse()
+                ->and($report['outputs'])->toBe([]);
+
+            return;
+        }
+
+        $fallback = 'a closure need not be serialized in the parent';
+
+        expect($report['thrown'])->toBeNull()
+            ->and($report['orders'])->toBe([1])
+            ->and($report['callbackInParent'])->toBeTrue()
+            ->and($report['fallbackIdentity'])->toBeTrue()
+            ->and($report['results'])->toEqual([0 => 'slow sibling', 1 => $fallback, 2 => 'queued sibling'])
+            ->and($report['outputs'])->toBe([$fallback, 'queued sibling', 'slow sibling'])
+            ->and($report['queuedFinished'])->toBeTrue();
+
+        if ($scenario === 'large') {
+            expect($report['class'])->toBe(RuntimeException::class)
+                ->and($report['message'])->toBe(str_repeat('0123456789abcdef', 65_536))
+                ->and($report['code'])->toBe(51);
+
+            return;
+        }
+
+        expect($report['code'])->toBe(73)
+            ->and($report['file'])->toBe(__DIR__.'/fixtures/catchExceptions.php')
+            ->and($report['line'])->toBe($report['originalLine'])
+            ->and($report['events'])->toBe($scenario === 'serialize-failure' ? ['serialize:0'] : ['serialize:0', 'unserialize:1']);
+
+        if ($scenario === 'roundtrip') {
+            expect($report['class'])->toBe('CatchTaskException')
+                ->and($report['message'])->toBe('original failure')
+                ->and($report['previous'])->toBe('previous failure')
+                ->and($report['metadataMatches'])->toBeTrue();
+
+            return;
+        }
+
+        expect($report['class'])->toBe(TaskFailed::class)
+            ->and($report['message'])->toBe('CatchTaskException: original failure')
+            ->and($report['originalClass'])->toBe('CatchTaskException')
+            ->and($report['originalTrace'])->toBeTrue();
+    } finally {
+        posix_kill(-$pid, SIGKILL);
+        proc_terminate($process, SIGKILL);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($process);
+    }
+})->with(['roundtrip', 'serialize-failure', 'restore-failure', 'large', 'callback-throw', 'exit'])->with([false, true]);
+
+test('incomplete transfers fail instead of returning truncated results', function (bool $serialized, bool $withoutPosix, bool $catchExceptions) {
+    $report = runTransferScenario('timeout', $serialized, $withoutPosix, $catchExceptions);
 
     expect($report['exception'])->toBe(CouldNotManageTask::class)
         ->and($report['callbacks'])->toBe(['first task'])
         ->and($report['childSuccess'])->toBeFalse();
-})->with([false, true])->with([false, true]);
+})->with([false, true])->with([false, true])->with([false, true]);
 
-test('large transfers succeed when the busy parent resumes within the wait limit', function (bool $serialized, bool $withoutPosix) {
-    $report = runTransferScenario('success', $serialized, $withoutPosix);
+test('large transfers succeed when the busy parent resumes within the wait limit', function (bool $serialized, bool $withoutPosix, bool $catchExceptions) {
+    $report = runTransferScenario('success', $serialized, $withoutPosix, $catchExceptions);
 
     expect($report['exception'])->toBeNull()
         ->and($report['exact'])->toBeTrue()
         ->and($report['callbacks'])->toBe(['first task', 'large result'])
         ->and($report['childSuccess'])->toBeTrue();
-})->with([false, true])->with([false, true]);
+})->with([false, true])->with([false, true])->with([false, true]);
 
 test('an abandoned fork writer fails even while a sibling retains its peer socket', function () {
     $report = runTransferScenario('abandonedFork');
