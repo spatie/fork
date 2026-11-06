@@ -233,6 +233,29 @@ $results = Fork::new()
 
 In this case, the first two functions will be run immediately and as soon as one of them finishes, the last one will start as well.
 
+### Handling exceptions
+
+By default, a child task that throws an exception returns an empty string. To find out what went wrong, pass a callback to `catch`. The exception is sent to the parent process, and passed to the callback together with the position of the task in the `run` call. Whatever the callback returns becomes the output of that task:
+
+```php
+$results = Fork::new()
+    ->catch(function (Throwable $exception, int $order) {
+        report($exception);
+
+        return null;
+    })
+    ->run(
+        fn () => (new Api)->fetchData(userId: 1),
+        fn () => (new Api)->fetchData(userId: 2),
+    );
+```
+
+The callback runs in the parent process. Its return value also reaches `after(parent: ...)` and does not need to be serializable. The task order is zero-based and refers to its position in `run`, not its completion order. Other tasks keep running and queued tasks are started as usual.
+
+A task whose return value can't be serialized (for example a closure) is caught the same way, with the exception PHP threw while serializing it. Serializable exceptions retain their class, code, previous exception and custom properties. If an exception can't be serialized or restored in the parent, the callback receives a `Spatie\Fork\Exceptions\TaskFailed` exception instead, with the original exception's class, message, file, line and a string representation of its trace (`originalTrace`).
+
+`catch` handles exceptions from the task callable and serialization of its return value, not from `before` or `after` callbacks, parent-side return-value restoration, failed output transfers or unexpected child exit statuses. If the catch callback itself throws, that exception propagates from `run`, just like other parent callbacks: no further queued tasks are started, but already-started siblings are not automatically cancelled or drained. Installing `catch` does not change signal handling or cleanup policies. Without it, existing output and failure behavior is unchanged.
+
 ### When a child process cannot be created
 
 If the system cannot create a child process (for example, because a process limit is reached), `run()` throws `Spatie\Fork\Exceptions\CouldNotManageTask` instead of waiting for an invalid process id. If your error handler throws an exception for the fork warning, that original exception is rethrown instead.
