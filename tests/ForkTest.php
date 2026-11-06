@@ -217,10 +217,11 @@ test('afterWithOrder identifies completed and queued tasks without changing afte
     expect($report['results'])->toBe($expected)
         ->and($report['ordered'])->toBe($expected);
 
-    $expectedLegacy = array_map(fn ($value) => [1, $value], $expected);
-    expect($report['legacy'])->toEqualCanonicalizing($expectedLegacy);
+    expect($report['legacy'])->toHaveCount(3);
 
     foreach ($expected as $order => $value) {
+        expect($report['legacy'])->toContain([1, $value]);
+
         $raw = $serialized ? '[[serialized::'.serialize($value) : $value;
         $events = array_values(array_filter($report['events'], fn (array $event) => end($event) === $raw));
 
