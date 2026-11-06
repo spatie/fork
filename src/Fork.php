@@ -17,6 +17,10 @@ class Fork
 
     protected ?Closure $toExecuteAfterInParentTask = null;
 
+    protected ?Closure $toExecuteAfterWithOrderInChildTask = null;
+
+    protected ?Closure $toExecuteAfterWithOrderInParentTask = null;
+
     protected ?int $concurrent = null;
 
     /** @var Task[] */
@@ -49,6 +53,14 @@ class Fork
     {
         $this->toExecuteAfterInChildTask = $child;
         $this->toExecuteAfterInParentTask = $parent;
+
+        return $this;
+    }
+
+    public function afterWithOrder(?callable $child = null, ?callable $parent = null): self
+    {
+        $this->toExecuteAfterWithOrderInChildTask = $child === null ? null : $child(...);
+        $this->toExecuteAfterWithOrderInParentTask = $parent === null ? null : $parent(...);
 
         return $this;
     }
@@ -123,7 +135,11 @@ class Fork
         $output = $task->output();
 
         if ($this->toExecuteAfterInParentTask) {
-            ($this->toExecuteAfterInParentTask)($output, $task->order());
+            ($this->toExecuteAfterInParentTask)($output);
+        }
+
+        if ($this->toExecuteAfterWithOrderInParentTask) {
+            ($this->toExecuteAfterWithOrderInParentTask)($output, $task->order());
         }
 
         unset($this->runningTasks[$task->order()]);
@@ -234,7 +250,11 @@ class Fork
         }
 
         if ($this->toExecuteAfterInChildTask) {
-            ($this->toExecuteAfterInChildTask)($output, $task->order());
+            ($this->toExecuteAfterInChildTask)($output);
+        }
+
+        if ($this->toExecuteAfterWithOrderInChildTask) {
+            ($this->toExecuteAfterWithOrderInChildTask)($output, $task->order());
         }
 
         $connectionToParent->close();

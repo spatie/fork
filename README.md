@@ -205,18 +205,24 @@ $results = Fork::new()
     );
 ```
 
-Tasks can finish in any order, so the `after` callbacks also receive the position of the task in the `run` call, starting at 0:
+Tasks can finish in any order. To identify each completed task, opt in with `afterWithOrder`. Its callbacks receive the output and the task's position in the `run` call, starting at 0 and matching the result array's keys, not completion order:
 
 ```php
 Fork::new()
-    ->after(
-        parent: fn ($output, int $order) => echo "Task {$order} returned {$output}",
+    ->afterWithOrder(
+        parent: function ($output, int $order): void {
+            echo "Task {$order} returned {$output}";
+        },
     )
     ->run(
         fn () => 'first',
         fn () => 'second',
     );
 ```
+
+Like `after`, `afterWithOrder` accepts both `child` and `parent` callbacks. Parent callbacks receive the decoded return value; child callbacks receive the raw output sent to the parent, including the serialization marker for non-string values. The existing task-failure and serialization behavior is unchanged.
+
+The existing `after` callbacks still receive exactly one argument. You can register both hooks: in each process, `after` runs before `afterWithOrder`. Calling `afterWithOrder` again replaces both of its callbacks; calling it without arguments clears them without changing `after`. Callback exceptions follow the same behavior as `after`: parent exceptions propagate, while child callback exceptions are subject to the existing child-exit policy and are not transported to the parent.
 
 Keep parent callbacks short: while they run, the parent cannot read other children's results. If a child cannot make progress sending its result for five seconds, `run()` throws `Spatie\Fork\Exceptions\CouldNotManageTask` instead of returning incomplete data. Successful writes reset this wait limit, so a transfer that keeps making progress can take longer than five seconds overall.
 
