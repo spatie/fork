@@ -171,6 +171,138 @@ test('output in after', function () {
         );
 });
 
+test('after preserves existing callable arguments and output', function (string $form, string $process, bool $withoutPosix) {
+    $report = runAfterCallbackScenario($form, $process, withoutPosix: $withoutPosix);
+
+    expect($report['exception'])->toBeNull()
+        ->and(array_key_first($report['results']))->toBe(1);
+
+    ksort($report['results']);
+    expect($report['results'])->toBe(['slow', 'fast', 'queued']);
+
+    if ($form === 'print_r') {
+        expect($report['printed'])->toBeIn(['fastslowqueued', 'fastqueuedslow']);
+
+        return;
+    }
+
+    expect($report['printed'])->toBe('');
+
+    if ($form === 'strlen') {
+        expect($report['events'])->toBe([]);
+
+        return;
+    }
+
+    $events = $report['events'];
+    sort($events);
+    $expected = match ($form) {
+        'single' => [[1, 'fast'], [1, 'queued'], [1, 'slow']],
+        'optional', 'object' => [['fast', 'default'], ['queued', 'default'], ['slow', 'default']],
+        'variadic' => [['fast'], ['queued'], ['slow']],
+    };
+
+    expect($events)->toBe($expected);
+})->with(['print_r', 'strlen', 'single', 'optional', 'variadic', 'object'])
+    ->with(['parent', 'child'])->with([false, true]);
+
+test('afterWithOrder identifies completed and queued tasks without changing after', function (bool $serialized, bool $withoutPosix) {
+    $report = runAfterCallbackScenario('ordered', serialized: $serialized, withoutPosix: $withoutPosix);
+    $expected = $serialized ? [['slow' => 73], ['fast' => 29], ['queued' => 41]] : ['slow', 'fast', 'queued'];
+
+    expect($report['exception'])->toBeNull()
+        ->and(array_key_first($report['ordered']))->toBe(1);
+
+    ksort($report['results']);
+    ksort($report['ordered']);
+    expect($report['results'])->toBe($expected)
+        ->and($report['ordered'])->toBe($expected);
+
+    expect($report['legacy'])->toHaveCount(3);
+
+    foreach ($expected as $order => $value) {
+        expect($report['legacy'])->toContain([1, $value]);
+
+        $raw = $serialized ? '[[serialized::'.serialize($value) : $value;
+        $events = array_values(array_filter($report['events'], fn (array $event) => end($event) === $raw));
+
+        expect($events)->toBe([['legacy', 1, $raw], ['ordered', $order, $raw]]);
+    }
+})->with([false, true])->with([false, true]);
+
+test('afterWithOrder receives catch recovery values and original task positions', function (bool $serialized, bool $withoutPosix) {
+    $report = runAfterCallbackScenario('caught-failure', serialized: $serialized, withoutPosix: $withoutPosix);
+    $expected = $serialized ? [['slow' => 73], ['recovered' => 1], ['queued' => 41]] : ['slow', ['recovered' => 1], 'queued'];
+
+    expect($report['exception'])->toBeNull()
+        ->and(array_key_first($report['ordered']))->toBe(1)
+        ->and($report['legacy'])->toHaveCount(3);
+
+    ksort($report['results']);
+    ksort($report['ordered']);
+    expect($report['results'])->toBe($expected)
+        ->and($report['ordered'])->toBe($expected);
+
+    foreach ($expected as $value) {
+        expect($report['legacy'])->toContain([1, $value]);
+    }
+
+    $orders = array_column(array_filter($report['events'], fn (array $event) => $event[0] === 'ordered'), 1);
+    sort($orders);
+    expect($orders)->toBe([0, 1, 2]);
+})->with([false, true])->with([false, true]);
+
+test('afterWithOrder registration can be replaced or cleared independently', function (string $scenario) {
+    $report = runAfterCallbackScenario($scenario);
+
+    expect($report['exception'])->toBeNull()
+        ->and($report['ordered'])->toBe([])
+        ->and($report['legacy'])->toHaveCount(3);
+
+    $events = $report['events'];
+    sort($events);
+    $expected = [['legacy', 1, 'fast'], ['legacy', 1, 'queued'], ['legacy', 1, 'slow']];
+
+    if ($scenario === 'replace') {
+        array_push($expected, ['replacement', 0, 'slow'], ['replacement', 1, 'fast'], ['replacement', 2, 'queued']);
+    }
+
+    expect($events)->toBe($expected);
+})->with(['replace', 'clear']);
+
+test('afterWithOrder preserves task and callback failure policies', function (string $scenario, bool $withoutPosix) {
+    $report = runAfterCallbackScenario($scenario, withoutPosix: $withoutPosix);
+
+    expect($report['exception'])->toBe(match ($scenario) {
+        'parent-failure' => 'original',
+        'child-failure', 'serialization-failure' => null,
+        default => CouldNotManageTask::class,
+    });
+
+    if ($scenario === 'task-failure') {
+        expect($report['legacy'])->toBe([])
+            ->and($report['ordered'])->toBe([])
+            ->and($report['events'])->toBe([]);
+    }
+
+    if ($scenario === 'serialization-failure') {
+        ksort($report['results']);
+        expect($report['results'])->toBe(['slow', '', 'queued'])
+            ->and($report['ordered'][1])->toBe('')
+            ->and($report['events'])->not->toContain(['ordered', 1, '']);
+    }
+
+    if ($scenario === 'parent-failure') {
+        expect($report['legacy'])->toBe([[1, 'fast']])
+            ->and($report['ordered'])->toBe([1 => 'fast']);
+    }
+
+    if ($scenario === 'child-failure') {
+        ksort($report['results']);
+        expect($report['results'])->toBe(['slow', 'fast', 'queued']);
+    }
+})->with(['task-failure', 'serialization-failure', 'parent-failure', 'child-failure'])->with([false, true]);
+
 test('allow 2nd process to be done before the 1st', function () {
     expect(
         Fork::new()->run(
