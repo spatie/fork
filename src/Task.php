@@ -4,6 +4,8 @@ namespace Spatie\Fork;
 
 use Closure;
 use Spatie\Fork\Exceptions\CouldNotManageTask;
+use Spatie\Fork\Exceptions\TaskFailed;
+use Throwable;
 
 class Task
 {
@@ -24,6 +26,10 @@ class Task
     protected Closure $callable;
 
     protected string $output = '';
+
+    protected bool $catchExceptions = false;
+
+    protected ?Throwable $exception = null;
 
     public static function fromCallable(callable $callable, int $order): self
     {
@@ -88,15 +94,34 @@ class Task
         return $this;
     }
 
+    public function setCatchExceptions(bool $catchExceptions): self
+    {
+        $this->catchExceptions = $catchExceptions;
+
+        return $this;
+    }
+
     public function execute(): string
     {
-        $output = ($this->callable)();
+        try {
+            $output = ($this->callable)();
 
-        if (is_string($output)) {
-            return $output;
+            if ($this->catchExceptions) {
+                return serialize(['output' => $output]);
+            }
+
+            if (is_string($output)) {
+                return $output;
+            }
+
+            return self::SERIALIZATION_TOKEN.serialize($output);
+        } catch (Throwable $exception) {
+            if (! $this->catchExceptions) {
+                throw $exception;
+            }
+
+            return $this->serializeException($exception);
         }
-
-        return self::SERIALIZATION_TOKEN.serialize($output);
     }
 
     public function output(): mixed
@@ -111,6 +136,18 @@ class Task
 
         $output = $this->output;
 
+        if ($this->catchExceptions && $output !== '') {
+            $payload = unserialize($output);
+
+            if (array_key_exists('description', $payload)) {
+                $this->exception = $this->unserializeException($payload);
+
+                return null;
+            }
+
+            return $payload['output'];
+        }
+
         if (str_starts_with($output, self::SERIALIZATION_TOKEN)) {
             $output = unserialize(
                 substr($output, strlen(self::SERIALIZATION_TOKEN))
@@ -118,6 +155,47 @@ class Task
         }
 
         return $output;
+    }
+
+    /**
+     * The exception the task threw, when exceptions are caught (see Fork::catch()).
+     */
+    public function exception(): ?Throwable
+    {
+        return $this->exception;
+    }
+
+    /**
+     * The exception itself is sent when it can be serialized, and a description of it when it can't (for example
+     * because it holds a closure), so the parent always gets to know what went wrong.
+     */
+    protected function serializeException(Throwable $exception): string
+    {
+        $description = TaskFailed::describe($exception);
+
+        try {
+            $serialized = serialize($exception);
+        } catch (Throwable) {
+            $serialized = null;
+        }
+
+        return serialize(['exception' => $serialized, 'description' => $description]);
+    }
+
+    /**
+     * @param  array{exception: ?string, description: array{class: string, message: string, code: int, file: string, line: int, trace: string}}  $payload
+     */
+    protected function unserializeException(array $payload): Throwable
+    {
+        if ($payload['exception'] !== null) {
+            try {
+                return unserialize($payload['exception']);
+            } catch (Throwable) {
+                // Custom restoration hooks may fail only in the parent process.
+            }
+        }
+
+        return TaskFailed::fromDescription($payload['description']);
     }
 
     public function onSuccess(callable $callback): self

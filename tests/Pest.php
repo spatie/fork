@@ -23,10 +23,10 @@ function assertTookLessThanSeconds(int $expectedLessThanSeconds): void
     );
 }
 
-function runTransferScenario(string $scenario, bool $serialized = false, bool $withoutPosix = false): array
+function runTransferScenario(string $scenario, bool $serialized = false, bool $withoutPosix = false, bool $catchExceptions = false): array
 {
     $process = proc_open(
-        [PHP_BINARY, __DIR__.'/fixtures/incompleteTransfer.php', $scenario, (int) $serialized, (int) $withoutPosix],
+        [PHP_BINARY, __DIR__.'/fixtures/incompleteTransfer.php', $scenario, (int) $serialized, (int) $withoutPosix, (int) $catchExceptions],
         [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
         $pipes,
     );

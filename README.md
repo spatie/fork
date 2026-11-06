@@ -220,7 +220,7 @@ Fork::new()
     );
 ```
 
-Like `after`, `afterWithOrder` accepts both `child` and `parent` callbacks. Parent callbacks receive the decoded return value; child callbacks receive the raw output sent to the parent, including the serialization marker for non-string values. The existing task-failure and serialization behavior is unchanged.
+Like `after`, `afterWithOrder` accepts both `child` and `parent` callbacks. Parent callbacks receive the decoded return value, or the recovery value returned by `catch` when it handles a task exception. Child callbacks receive the raw output sent to the parent, which is serialized for non-string values or when `catch` is enabled. The existing task-failure and serialization behavior is unchanged.
 
 The existing `after` callbacks still receive exactly one argument. You can register both hooks: in each process, `after` runs before `afterWithOrder`. Calling `afterWithOrder` again replaces both of its callbacks; calling it without arguments clears them without changing `after`. Callback exceptions follow the same behavior as `after`: parent exceptions propagate, while child callback exceptions are subject to the existing child-exit policy and are not transported to the parent.
 
@@ -251,6 +251,29 @@ $results = Fork::new()
 ```
 
 In this case, the first two functions will be run immediately and as soon as one of them finishes, the last one will start as well.
+
+### Handling exceptions
+
+By default, a child task that throws an exception returns an empty string. To find out what went wrong, pass a callback to `catch`. The exception is sent to the parent process, and passed to the callback together with the position of the task in the `run` call. Whatever the callback returns becomes the output of that task:
+
+```php
+$results = Fork::new()
+    ->catch(function (Throwable $exception, int $order) {
+        report($exception);
+
+        return null;
+    })
+    ->run(
+        fn () => (new Api)->fetchData(userId: 1),
+        fn () => (new Api)->fetchData(userId: 2),
+    );
+```
+
+The callback runs in the parent process. Its return value also reaches `after(parent: ...)` and does not need to be serializable. The task order is zero-based and refers to its position in `run`, not its completion order. Other tasks keep running and queued tasks are started as usual.
+
+A task whose return value can't be serialized (for example a closure) is caught the same way, with the exception PHP threw while serializing it. Serializable exceptions retain their class, code, previous exception and custom properties. If an exception can't be serialized or restored in the parent, the callback receives a `Spatie\Fork\Exceptions\TaskFailed` exception instead, with the original exception's class, message, file, line and a string representation of its trace (`originalTrace`).
+
+`catch` handles exceptions from the task callable and serialization of its return value, not from `before` or `after` callbacks, parent-side return-value restoration, failed output transfers or unexpected child exit statuses. If the catch callback itself throws, that exception propagates from `run`, just like other parent callbacks: no further queued tasks are started, but already-started siblings are not automatically cancelled or drained. Installing `catch` does not change signal handling or cleanup policies. Without it, existing output and failure behavior is unchanged.
 
 ### When a child process cannot be created
 

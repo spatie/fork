@@ -47,6 +47,10 @@ $fork->before(parent: function () use (&$started, $childGate): void {
 if ($callback) {
     $process === 'parent' ? $fork->after(parent: $callback) : $fork->after(child: $callback);
 } else {
+    if ($scenario === 'caught-failure') {
+        $fork->catch(fn (Throwable $exception, int $order) => ['recovered' => $order]);
+    }
+
     $fork->after(
         child: fn ($output) => $record(['legacy', func_num_args(), $output]),
         parent: function ($output) use (&$legacy): void {
@@ -99,6 +103,14 @@ try {
         function () use ($serialized, $scenario) {
             if ($scenario === 'task-failure') {
                 exit(7);
+            }
+
+            if ($scenario === 'caught-failure') {
+                if ($serialized) {
+                    return fn () => 1;
+                }
+
+                throw new RuntimeException('task failure');
             }
 
             if ($scenario === 'serialization-failure') {
